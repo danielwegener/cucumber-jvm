@@ -22,6 +22,22 @@ public interface Glue {
 
     List<HookDefinition> getAfterHooks();
 
+    void addBeforeFeatureHook(FeatureHookDefinition featureHookDefinition);
+
+    void addAfterFeatureHook(FeatureHookDefinition featureHookDefinition);
+
+    List<FeatureHookDefinition> getBeforeFeatureHooks();
+
+    List<FeatureHookDefinition> getAfterFeatureHooks();
+
+    void addBeforeStepHook(StepHookDefinition stepHookDefinition);
+
+    void addAfterStepHook(StepHookDefinition stepHookDefinition);
+
+    List<StepHookDefinition> getBeforeStepHooks();
+
+    List<StepHookDefinition> getAfterStepHooks();
+
     StepDefinitionMatch stepDefinitionMatch(String uri, Step step, I18n i18n);
 
     void writeStepdefsJson(List<String> featurePaths, URL dotCucumber) throws IOException;

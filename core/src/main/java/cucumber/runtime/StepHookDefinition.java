@@ -1,11 +1,13 @@
 package cucumber.runtime;
 
+import cucumber.api.Feature;
 import cucumber.api.Scenario;
+import cucumber.api.Step;
 import gherkin.formatter.model.Tag;
 
 import java.util.Collection;
 
-public interface HookDefinition extends HasOrder {
+public interface StepHookDefinition extends HasOrder {
     /**
      * The source line where the step definition is defined.
      * Example: foo/bar/Zap.brainfuck:42
@@ -14,7 +16,7 @@ public interface HookDefinition extends HasOrder {
      */
     String getLocation(boolean detail);
 
-    void execute(Scenario scenario) throws Throwable;
+    void execute(Feature feature, Scenario scenario, Step step) throws Throwable;
 
     boolean matches(Collection<Tag> tags);
 

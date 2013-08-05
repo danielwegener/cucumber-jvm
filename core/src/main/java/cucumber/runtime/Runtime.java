@@ -180,13 +180,14 @@ public class Runtime implements UnreportedStepExecutor {
     private void runHooks(List<HookDefinition> hooks, Reporter reporter, Set<Tag> tags, boolean isBefore) {
         if (!runtimeOptions.isDryRun()) {
             for (HookDefinition hook : hooks) {
-                runHookIfTagsMatch(hook, reporter, tags, isBefore);
+                if (hook.matches(tags)) {
+                    runHook(hook, reporter, tags, isBefore);
+                }
             }
         }
     }
 
-    private void runHookIfTagsMatch(HookDefinition hook, Reporter reporter, Set<Tag> tags, boolean isBefore) {
-        if (hook.matches(tags)) {
+    private void runHook(HookDefinition hook, Reporter reporter, Set<Tag> tags, boolean isBefore) {
             String status = Result.PASSED;
             Throwable error = null;
             Match match = new Match(Collections.<Argument>emptyList(), hook.getLocation(false));
@@ -208,7 +209,6 @@ public class Runtime implements UnreportedStepExecutor {
                     reporter.after(match, result);
                 }
             }
-        }
     }
 
     //TODO: Maybe this should go into the cucumber step execution model and it should return the result of that execution!

@@ -31,6 +31,10 @@ public class RuntimeGlue implements Glue {
     private final Map<String, StepDefinition> stepDefinitionsByPattern = new TreeMap<String, StepDefinition>();
     private final List<HookDefinition> beforeHooks = new ArrayList<HookDefinition>();
     private final List<HookDefinition> afterHooks = new ArrayList<HookDefinition>();
+    private final List<FeatureHookDefinition> beforeFeatureHooks = new ArrayList<FeatureHookDefinition>();
+    private final List<FeatureHookDefinition> afterFeatureHooks = new ArrayList<FeatureHookDefinition>();
+    private final List<StepHookDefinition> beforeStepHooks = new ArrayList<StepHookDefinition>();
+    private final List<StepHookDefinition> afterStepHooks = new ArrayList<StepHookDefinition>();
 
     private final UndefinedStepsTracker tracker;
     private final LocalizedXStreams localizedXStreams;
@@ -52,13 +56,57 @@ public class RuntimeGlue implements Glue {
     @Override
     public void addBeforeHook(HookDefinition hookDefinition) {
         beforeHooks.add(hookDefinition);
-        Collections.sort(beforeHooks, new HookComparator(true));
+        Collections.sort(beforeHooks, new OrderedComparator(true));
     }
 
     @Override
     public void addAfterHook(HookDefinition hookDefinition) {
         afterHooks.add(hookDefinition);
-        Collections.sort(afterHooks, new HookComparator(false));
+        Collections.sort(afterHooks, new OrderedComparator(false));
+    }
+
+    @Override
+    public void addBeforeFeatureHook(FeatureHookDefinition featureHookDefinition) {
+        beforeFeatureHooks.add(featureHookDefinition);
+        Collections.sort(beforeHooks, new OrderedComparator(true));
+    }
+
+    @Override
+    public void addAfterFeatureHook(FeatureHookDefinition featureHookDefinition) {
+        afterFeatureHooks.add(featureHookDefinition);
+        Collections.sort(afterHooks, new OrderedComparator(false));
+    }
+
+    @Override
+    public List<FeatureHookDefinition> getBeforeFeatureHooks() {
+        return beforeFeatureHooks;
+    }
+
+    @Override
+    public List<FeatureHookDefinition> getAfterFeatureHooks() {
+        return afterFeatureHooks;
+    }
+
+    @Override
+    public void addBeforeStepHook(StepHookDefinition stepHookDefinition) {
+        beforeStepHooks.add(stepHookDefinition);
+        Collections.sort(beforeHooks, new OrderedComparator(true));
+    }
+
+    @Override
+    public void addAfterStepHook(StepHookDefinition stepHookDefinition) {
+        afterStepHooks.add(stepHookDefinition);
+        Collections.sort(afterHooks, new OrderedComparator(false));
+    }
+
+    @Override
+    public List<StepHookDefinition> getBeforeStepHooks() {
+        return beforeStepHooks;
+    }
+
+    @Override
+    public List<StepHookDefinition> getAfterStepHooks() {
+        return afterStepHooks;
     }
 
     @Override

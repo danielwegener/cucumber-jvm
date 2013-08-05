@@ -2,15 +2,15 @@ package cucumber.runtime;
 
 import java.util.Comparator;
 
-class HookComparator implements Comparator<HookDefinition> {
+class OrderedComparator implements Comparator<HasOrder> {
     private final boolean ascending;
 
-    public HookComparator(boolean ascending) {
+    public OrderedComparator(boolean ascending) {
         this.ascending = ascending;
     }
 
     @Override
-    public int compare(HookDefinition hook1, HookDefinition hook2) {
+    public int compare(HasOrder hook1, HasOrder hook2) {
         int comparison = hook1.getOrder() - hook2.getOrder();
         return ascending ? comparison : -comparison;
     }
