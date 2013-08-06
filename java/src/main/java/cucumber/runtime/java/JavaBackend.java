@@ -1,7 +1,9 @@
 package cucumber.runtime.java;
 
 import cucumber.api.java.After;
+import cucumber.api.java.AfterStep;
 import cucumber.api.java.Before;
+import cucumber.api.java.BeforeStep;
 import cucumber.runtime.*;
 import cucumber.runtime.io.*;
 import cucumber.runtime.snippets.SnippetGenerator;
@@ -123,10 +125,18 @@ public class JavaBackend implements Backend {
             String[] tagExpressions = ((Before) annotation).value();
             int timeout = ((Before) annotation).timeout();
             glue.addBeforeHook(new JavaHookDefinition(method, tagExpressions, ((Before) annotation).order(), timeout, objectFactory));
-        } else {
+        } else if (annotation.annotationType().equals(After.class)) {
             String[] tagExpressions = ((After) annotation).value();
             int timeout = ((After) annotation).timeout();
             glue.addAfterHook(new JavaHookDefinition(method, tagExpressions, ((After) annotation).order(), timeout, objectFactory));
+        } else if (annotation.annotationType().equals(BeforeStep.class)) {
+            String[] tagExpressions = ((BeforeStep) annotation).value();
+            int timeout = ((BeforeStep) annotation).timeout();
+            glue.addBeforeStepHook(new JavaStepHookDefinition(method, tagExpressions, ((BeforeStep) annotation).order(), timeout, objectFactory));
+        } else if (annotation.annotationType().equals(AfterStep.class)) {
+            String[] tagExpressions = ((AfterStep) annotation).value();
+            int timeout = ((AfterStep) annotation).timeout();
+            glue.addAfterStepHook(new JavaStepHookDefinition(method, tagExpressions, ((AfterStep) annotation).order(), timeout, objectFactory));
         }
     }
 }

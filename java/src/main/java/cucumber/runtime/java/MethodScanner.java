@@ -1,15 +1,16 @@
 package cucumber.runtime.java;
 
 import cucumber.api.java.After;
+import cucumber.api.java.AfterStep;
 import cucumber.api.java.Before;
+import cucumber.api.java.BeforeStep;
 import cucumber.runtime.CucumberException;
 import cucumber.runtime.Utils;
 import cucumber.runtime.io.Reflections;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import static cucumber.runtime.io.MultiLoader.packageName;
 
@@ -76,9 +77,10 @@ class MethodScanner {
     }
 
     private boolean isHookAnnotation(Annotation annotation) {
-        Class<? extends Annotation> annotationClass = annotation.annotationType();
-        return annotationClass.equals(Before.class) || annotationClass.equals(After.class);
+        return hookAnnotations.contains(annotation.getClass());
     }
+
+    private final Set<Class<? extends Annotation>> hookAnnotations = new HashSet<Class<? extends Annotation>>(Arrays.asList(After.class, Before.class, BeforeStep.class, AfterStep.class));
 
     private boolean isStepdefAnnotation(Annotation annotation) {
         Class<? extends Annotation> annotationClass = annotation.annotationType();
