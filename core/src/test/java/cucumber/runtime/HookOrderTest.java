@@ -2,6 +2,7 @@ package cucumber.runtime;
 
 import cucumber.api.Scenario;
 import cucumber.runtime.io.ResourceLoader;
+import cucumber.runtime.model.ExecutionResult;
 import gherkin.formatter.Reporter;
 import gherkin.formatter.model.Tag;
 import org.junit.Before;
@@ -42,7 +43,7 @@ public class HookOrderTest {
             glue.addBeforeHook(hook);
         }
 
-        runtime.runBeforeHooks(mock(Reporter.class), new HashSet<Tag>());
+        ExecutionResult.executeAll(runtime.runBeforeHooks(new HashSet<Tag>()), mock(Reporter.class), null);
 
         InOrder inOrder = inOrder(hooks.toArray());
         inOrder.verify(hooks.get(6)).execute(Matchers.<Scenario>any());
@@ -61,7 +62,7 @@ public class HookOrderTest {
             glue.addAfterHook(hook);
         }
 
-        runtime.runAfterHooks(mock(Reporter.class), new HashSet<Tag>());
+        ExecutionResult.executeAll(runtime.runAfterHooks(new HashSet<Tag>()), mock(Reporter.class), null);
 
         InOrder inOrder = inOrder(hooks.toArray());
         inOrder.verify(hooks.get(2)).execute(Matchers.<Scenario>any());
@@ -84,7 +85,7 @@ public class HookOrderTest {
             glue.addBeforeHook(hook);
         }
 
-        runtime.runBeforeHooks(mock(Reporter.class), new HashSet<Tag>());
+        ExecutionResult.executeAll(runtime.runBeforeHooks(new HashSet<Tag>()), mock(Reporter.class), null);
 
         List<HookDefinition> allHooks = new ArrayList<HookDefinition>();
         allHooks.addAll(backend1Hooks);

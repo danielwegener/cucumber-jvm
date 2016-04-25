@@ -38,14 +38,14 @@ public class CucumberScenario extends CucumberTagStatement {
         Set<Tag> tags = tagsAndInheritedTags();
         runtime.buildBackendWorlds(reporter, tags, scenario);
         formatter.startOfScenarioLifeCycle((Scenario) getGherkinModel());
-        runtime.runBeforeHooks(reporter, tags);
+        ExecutionResult.executeAll(runtime.runBeforeHooks(tags),reporter, null);
 
         runBackground(formatter, reporter, runtime);
         format(formatter);
-        ExecutionResult executionResult = runSteps(runtime);
-        ExecutionResult.executeAll(executionResult, reporter, formatter);
+        ExecutionResult.executeAll(runSteps(runtime), reporter, formatter);
 
-        runtime.runAfterHooks(reporter, tags);
+        ExecutionResult.executeAll(runtime.runAfterHooks(tags),reporter, null);
+
         formatter.endOfScenarioLifeCycle((Scenario) getGherkinModel());
         runtime.disposeBackendWorlds(createScenarioDesignation());
     }

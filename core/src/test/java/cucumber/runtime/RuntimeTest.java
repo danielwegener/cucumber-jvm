@@ -635,11 +635,11 @@ public class RuntimeTest {
     private void runScenario(Reporter reporter, Runtime runtime, int stepCount) {
         gherkin.formatter.model.Scenario gherkinScenario = mock(gherkin.formatter.model.Scenario.class);
         runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), gherkinScenario);
-        runtime.runBeforeHooks(reporter, Collections.<Tag>emptySet());
+        ExecutionResult.executeAll(runtime.runBeforeHooks(Collections.<Tag>emptySet()),reporter, null);
         for (int i = 0; i < stepCount; ++i) {
             runStep(reporter, runtime);
         }
-        runtime.runAfterHooks(reporter, Collections.<Tag>emptySet());
+        ExecutionResult.executeAll(runtime.runAfterHooks(Collections.<Tag>emptySet()),reporter, null);
         runtime.disposeBackendWorlds("scenario designation");
     }
 

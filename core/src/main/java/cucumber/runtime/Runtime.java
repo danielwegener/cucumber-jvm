@@ -199,23 +199,24 @@ public class Runtime implements UnreportedStepExecutor {
         return glue;
     }
 
-    public void runBeforeHooks(Reporter reporter, Set<Tag> tags) {
-        runHooks(glue.getBeforeHooks(), reporter, tags, true);
+    public ExecutionResult runBeforeHooks(Set<Tag> tags) {
+        return runHooks(glue.getBeforeHooks(), tags, true);
     }
 
-    public void runAfterHooks(Reporter reporter, Set<Tag> tags) {
-        runHooks(glue.getAfterHooks(), reporter, tags, false);
+    public ExecutionResult runAfterHooks(Set<Tag> tags) {
+        return runHooks(glue.getAfterHooks(), tags, false);
     }
 
-    private void runHooks(List<HookDefinition> hooks, Reporter reporter, Set<Tag> tags, boolean isBefore) {
-        if (!runtimeOptions.isDryRun()) {
-            for (HookDefinition hook : hooks) {
-                runHookIfTagsMatch(hook, reporter, tags, isBefore);
-            }
-        }
+    private ExecutionResult runHooks(List<HookDefinition> hooks, Set<Tag> tags, boolean isBefore) {
+        if (hooks.isEmpty()) return ExecutionResult.EMPTY.done();
+
+        return runHookIfTagsMatch(hooks.get(0), tags, isBefore).withContinuation(() ->
+            runHooks(Utils.tail(hooks), tags, isBefore));
     }
 
-    private void runHookIfTagsMatch(HookDefinition hook, Reporter reporter, Set<Tag> tags, boolean isBefore) {
+    private ExecutionResult runHookIfTagsMatch(HookDefinition hook, Set<Tag> tags, boolean isBefore) {
+        final List<ExecutionResult.ReporterAction> reporterActions = new ArrayList<>();
+        boolean skipNextStepLocal = false;
         if (hook.matches(tags)) {
             String status = Result.PASSED;
             Throwable error = null;
@@ -227,18 +228,19 @@ public class Runtime implements UnreportedStepExecutor {
                 error = t;
                 status = isPending(t) ? "pending" : Result.FAILED;
                 addError(t);
-                skipNextStep = true;
+                skipNextStepLocal = skipNextStep = true;
             } finally {
                 long duration = stopWatch.stop();
                 Result result = new Result(status, duration, error, DUMMY_ARG);
                 addHookToCounterAndResult(scenarioResult,stats,result);
                 if (isBefore) {
-                    reporter.before(match, result);
+                    reporterActions.add(r->r.before(match, result));
                 } else {
-                    reporter.after(match, result);
+                    reporterActions.add(r->r.after(match, result));
                 }
             }
         }
+        return ExecutionResult.EMPTY.withReporterActions(reporterActions).withSkipNextStep(skipNextStepLocal).done();
     }
 
     //TODO: Maybe this should go into the cucumber step execution model and it should return the result of that execution!

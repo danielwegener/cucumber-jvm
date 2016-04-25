@@ -73,7 +73,7 @@ public class JavaStepDefinitionTest {
         Reporter reporter = mock(Reporter.class);
         runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), mock(Scenario.class));
         Tag tag = new Tag("@foo", 0);
-        runtime.runBeforeHooks(reporter, asSet(tag));
+        ExecutionResult.executeAll(runtime.runBeforeHooks(asSet(tag)), reporter, null);
         ExecutionResult executionResult = runtime.runStep("some.feature", new Step(NO_COMMENTS, "Given ", "three blind mice", 1, null, null), ENGLISH);
         executionResult.reporterActions.forEach(a->a.apply(reporter));
 
@@ -120,10 +120,9 @@ public class JavaStepDefinitionTest {
         runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), mock(Scenario.class));
         Tag tag = new Tag("@foo", 0);
         Set<Tag> tags = asSet(tag);
-        runtime.runBeforeHooks(reporter, tags);
+        ExecutionResult.executeAll(runtime.runBeforeHooks(tags), reporter, null);
         Step step = new Step(NO_COMMENTS, "Given ", "three blind mice", 1, null, null);
-        ExecutionResult executionResult = runtime.runStep("some.feature", step, ENGLISH);
-        executionResult.reporterActions.forEach(a -> a.apply(reporter));
+        ExecutionResult.executeAll(runtime.runStep("some.feature", step, ENGLISH), reporter, null);
         assertTrue(defs.foo);
         assertFalse(defs.bar);
     }
