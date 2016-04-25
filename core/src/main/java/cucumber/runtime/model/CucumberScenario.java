@@ -34,6 +34,7 @@ public class CucumberScenario extends CucumberTagStatement {
      */
     @Override
     public void run(Formatter formatter, Reporter reporter, Runtime runtime) {
+
         Set<Tag> tags = tagsAndInheritedTags();
         runtime.buildBackendWorlds(reporter, tags, scenario);
         formatter.startOfScenarioLifeCycle((Scenario) getGherkinModel());
@@ -41,7 +42,8 @@ public class CucumberScenario extends CucumberTagStatement {
 
         runBackground(formatter, reporter, runtime);
         format(formatter);
-        runSteps(reporter, runtime);
+        ExecutionResult executionResult = runSteps(runtime);
+        ExecutionResult.executeAll(executionResult, reporter, formatter);
 
         runtime.runAfterHooks(reporter, tags);
         formatter.endOfScenarioLifeCycle((Scenario) getGherkinModel());
@@ -56,7 +58,7 @@ public class CucumberScenario extends CucumberTagStatement {
     private void runBackground(Formatter formatter, Reporter reporter, Runtime runtime) {
         if (cucumberBackground != null) {
             cucumberBackground.format(formatter);
-            cucumberBackground.runSteps(reporter, runtime);
+            ExecutionResult.executeAll(cucumberBackground.runSteps(runtime), reporter, formatter);
         }
     }
 }

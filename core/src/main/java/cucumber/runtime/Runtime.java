@@ -5,6 +5,7 @@ import cucumber.api.StepDefinitionReporter;
 import cucumber.api.SummaryPrinter;
 import cucumber.runtime.io.ResourceLoader;
 import cucumber.runtime.model.CucumberFeature;
+import cucumber.runtime.model.ExecutionResult;
 import cucumber.runtime.xstream.LocalizedXStreams;
 import gherkin.I18n;
 import gherkin.formatter.Argument;
@@ -230,7 +231,7 @@ public class Runtime implements UnreportedStepExecutor {
             } finally {
                 long duration = stopWatch.stop();
                 Result result = new Result(status, duration, error, DUMMY_ARG);
-                addHookToCounterAndResult(result);
+                addHookToCounterAndResult(scenarioResult,stats,result);
                 if (isBefore) {
                     reporter.before(match, result);
                 } else {
@@ -260,29 +261,30 @@ public class Runtime implements UnreportedStepExecutor {
         match.runStep(i18n);
     }
 
-    public void runStep(String featurePath, Step step, Reporter reporter, I18n i18n) {
+    public ExecutionResult runStep(String featurePath, Step step,I18n i18n) {
+        final Collection<ExecutionResult.ReporterAction> reporterActions = new ArrayList<>();
         StepDefinitionMatch match;
 
         try {
             match = glue.stepDefinitionMatch(featurePath, step, i18n);
         } catch (AmbiguousStepDefinitionsException e) {
-            reporter.match(e.getMatches().get(0));
+            reporterActions.add( r->r.match(e.getMatches().get(0)));
             Result result = new Result(Result.FAILED, 0L, e, DUMMY_ARG);
-            reporter.result(result);
-            addStepToCounterAndResult(result);
+            reporterActions.add( r->r.result(result));
+            addStepToCounterAndResult(scenarioResult,stats,result);
             addError(e);
             skipNextStep = true;
-            return;
+            return ExecutionResult.EMPTY.withReporterActions(reporterActions).withError(e).skipNextStep().done();
         }
 
         if (match != null) {
-            reporter.match(match);
+            reporterActions.add(r->r.match(match));
         } else {
-            reporter.match(Match.UNDEFINED);
-            reporter.result(Result.UNDEFINED);
-            addStepToCounterAndResult(Result.UNDEFINED);
+            reporterActions.add(r->r.match(Match.UNDEFINED));
+            reporterActions.add(r->r.result(Result.UNDEFINED));
+            addStepToCounterAndResult(scenarioResult, stats, Result.UNDEFINED);
             skipNextStep = true;
-            return;
+            return ExecutionResult.EMPTY.withReporterActions(reporterActions).skipNextStep().done();
         }
 
         if (runtimeOptions.isDryRun()) {
@@ -290,8 +292,9 @@ public class Runtime implements UnreportedStepExecutor {
         }
 
         if (skipNextStep) {
-            addStepToCounterAndResult(Result.SKIPPED);
-            reporter.result(Result.SKIPPED);
+            addStepToCounterAndResult(scenarioResult, stats, Result.SKIPPED);
+            reporterActions.add(r->r.result(Result.SKIPPED));
+            return ExecutionResult.EMPTY.withReporterActions(reporterActions).withSkipNextStep(skipNextStep).done();
         } else {
             String status = Result.PASSED;
             Throwable error = null;
@@ -306,10 +309,17 @@ public class Runtime implements UnreportedStepExecutor {
             } finally {
                 long duration = stopWatch.stop();
                 Result result = new Result(status, duration, error, DUMMY_ARG);
-                addStepToCounterAndResult(result);
-                reporter.result(result);
+                addStepToCounterAndResult(scenarioResult, stats, result);
+                reporterActions.add(r->r.result(result));
             }
+            if (error != null) {
+                return ExecutionResult.EMPTY.withReporterActions(reporterActions).withSkipNextStep(skipNextStep).withError(error).done();
+            } else {
+                return ExecutionResult.EMPTY.withReporterActions(reporterActions).withSkipNextStep(skipNextStep).done();
+            }
+
         }
+
     }
 
     public static boolean isPending(Throwable t) {
@@ -319,12 +329,12 @@ public class Runtime implements UnreportedStepExecutor {
         return t.getClass().isAnnotationPresent(Pending.class) || Arrays.binarySearch(PENDING_EXCEPTIONS, t.getClass().getName()) >= 0;
     }
 
-    private void addStepToCounterAndResult(Result result) {
+    private static void addStepToCounterAndResult(ScenarioImpl scenarioResult, Stats stats, Result result) {
         scenarioResult.add(result);
         stats.addStep(result);
     }
 
-    private void addHookToCounterAndResult(Result result) {
+    private static void addHookToCounterAndResult(ScenarioImpl scenarioResult, Stats stats, Result result) {
         scenarioResult.add(result);
         stats.addHookTime(result.getDuration());
     }

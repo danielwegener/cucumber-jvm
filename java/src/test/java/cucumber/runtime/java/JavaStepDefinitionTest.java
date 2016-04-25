@@ -7,6 +7,7 @@ import cucumber.runtime.Glue;
 import cucumber.runtime.Runtime;
 import cucumber.runtime.RuntimeOptions;
 import cucumber.runtime.io.ClasspathResourceLoader;
+import cucumber.runtime.model.ExecutionResult;
 import gherkin.I18n;
 import gherkin.formatter.Reporter;
 import gherkin.formatter.model.Comment;
@@ -73,7 +74,9 @@ public class JavaStepDefinitionTest {
         runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), mock(Scenario.class));
         Tag tag = new Tag("@foo", 0);
         runtime.runBeforeHooks(reporter, asSet(tag));
-        runtime.runStep("some.feature", new Step(NO_COMMENTS, "Given ", "three blind mice", 1, null, null), reporter, ENGLISH);
+        ExecutionResult executionResult = runtime.runStep("some.feature", new Step(NO_COMMENTS, "Given ", "three blind mice", 1, null, null), ENGLISH);
+        executionResult.reporterActions.forEach(a->a.apply(reporter));
+
 
         ArgumentCaptor<Result> result = ArgumentCaptor.forClass(Result.class);
         verify(reporter).result(result.capture());
@@ -119,7 +122,8 @@ public class JavaStepDefinitionTest {
         Set<Tag> tags = asSet(tag);
         runtime.runBeforeHooks(reporter, tags);
         Step step = new Step(NO_COMMENTS, "Given ", "three blind mice", 1, null, null);
-        runtime.runStep("some.feature", step, reporter, ENGLISH);
+        ExecutionResult executionResult = runtime.runStep("some.feature", step, ENGLISH);
+        executionResult.reporterActions.forEach(a -> a.apply(reporter));
         assertTrue(defs.foo);
         assertFalse(defs.bar);
     }

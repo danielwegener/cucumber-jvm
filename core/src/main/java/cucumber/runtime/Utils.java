@@ -1,5 +1,8 @@
 package cucumber.runtime;
 
+import cucumber.runtime.model.ExecutionResult;
+import gherkin.formatter.*;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -8,9 +11,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Utils {
     public static <T> List<T> listOf(int size, T obj) {
@@ -19,6 +20,26 @@ public class Utils {
             list.add(obj);
         }
         return list;
+    }
+
+
+
+    public static <T> List<T> tail(List<T> c) {
+        return c.subList(1, c.size());
+
+    }
+
+    @SafeVarargs
+    public static <T> Collection<T> concat (Collection<T> ... collections) {
+        return concat(Arrays.asList(collections));
+    }
+
+    public static <T> Collection<T> concat(Iterable<Collection<T>>  collections) {
+        final List<T> concatinated = new ArrayList<T>();
+        for (Collection<T> collection : collections) {
+            concatinated.addAll(collection);
+        }
+        return concatinated;
     }
 
     public static boolean isInstantiable(Class<?> clazz) {

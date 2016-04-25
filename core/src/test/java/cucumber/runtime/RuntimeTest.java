@@ -9,6 +9,7 @@ import cucumber.runtime.io.ClasspathResourceLoader;
 import cucumber.runtime.io.Resource;
 import cucumber.runtime.io.ResourceLoader;
 import cucumber.runtime.model.CucumberFeature;
+import cucumber.runtime.model.ExecutionResult;
 import gherkin.I18n;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.JSONFormatter;
@@ -552,7 +553,7 @@ public class RuntimeTest {
     public void runStep(Reporter reporter, Runtime runtime) {
         Step step = mock(Step.class);
         I18n i18n = mock(I18n.class);
-        runtime.runStep("<featurePath>", step, reporter, i18n);
+        ExecutionResult.executeAll(runtime.runStep("<featurePath>", step, i18n), reporter, null);
     }
 
     private ResourceLoader createResourceLoaderThatFindsNoFeatures() {
