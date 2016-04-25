@@ -12,6 +12,22 @@
     <packaging>jar</packaging>
     <name>Cucumber-JVM: OpenEJB</name>
 
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.2</version>
+                <configuration combine.self="override">
+                    <!-- overwrite compilerArgument -Werror, broken with java8 -->
+                    <encoding>UTF-8</encoding>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
     <dependencies>
         <dependency>
             <groupId>info.cukes</groupId>
