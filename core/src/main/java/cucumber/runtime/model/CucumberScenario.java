@@ -2,6 +2,7 @@ package cucumber.runtime.model;
 
 import cucumber.runtime.Runtime;
 import cucumber.runtime.ScenarioImpl;
+import cucumber.runtime.Stats;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.Reporter;
 import gherkin.formatter.model.Row;
@@ -34,19 +35,20 @@ public class CucumberScenario extends CucumberTagStatement {
      * This method is called when Cucumber is run from the CLI or JUnit
      */
     @Override
-    public void run(Formatter formatter, Reporter reporter, Runtime runtime) {
+    public void run(Formatter formatter, Reporter reporter, Runtime runtime, Stats stats) {
         Set<Tag> tags = tagsAndInheritedTags();
         final ScenarioImpl scenarioResult = runtime.buildBackendWorlds(reporter, tags, this.scenario);
         formatter.startOfScenarioLifeCycle((Scenario) getGherkinModel());
-        runtime.runBeforeHooks(scenarioResult, reporter, tags);
+        runtime.runBeforeHooks(scenarioResult, stats, reporter, tags);
 
-        runBackground(scenarioResult, formatter, reporter, runtime);
+        runBackground(scenarioResult, formatter, reporter, runtime, stats);
         format(formatter);
-        runSteps(scenarioResult, reporter, runtime);
+        runSteps(scenarioResult, stats, reporter, runtime);
 
-        runtime.runAfterHooks(scenarioResult, reporter, tags);
+        runtime.runAfterHooks(scenarioResult, stats, reporter, tags);
         formatter.endOfScenarioLifeCycle((Scenario) getGherkinModel());
-        runtime.disposeBackendWorlds(scenarioResult, createScenarioDesignation());
+        runtime.disposeBackendWorlds();
+        stats.addScenario(scenarioResult.getStatus(), createScenarioDesignation());
     }
 
     private String createScenarioDesignation() {
@@ -54,10 +56,10 @@ public class CucumberScenario extends CucumberTagStatement {
                 scenario.getKeyword() + ": " + scenario.getName();
     }
 
-    private void runBackground(ScenarioImpl scenarioResult, Formatter formatter, Reporter reporter, Runtime runtime) {
+    private void runBackground(ScenarioImpl scenarioResult, Formatter formatter, Reporter reporter, Runtime runtime, Stats stats) {
         if (cucumberBackground != null) {
             cucumberBackground.format(formatter);
-            cucumberBackground.runSteps(scenarioResult, reporter, runtime);
+            cucumberBackground.runSteps(scenarioResult, stats, reporter, runtime);
         }
     }
 }

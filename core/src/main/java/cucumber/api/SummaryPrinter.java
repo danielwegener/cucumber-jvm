@@ -1,5 +1,7 @@
 package cucumber.api;
 
+import cucumber.runtime.Stats;
+
 public interface SummaryPrinter {
-    public void print(cucumber.runtime.Runtime runtime);
+    void print(cucumber.runtime.Runtime runtime, Stats stats);
 }

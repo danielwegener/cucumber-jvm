@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-class Stats {
+public class Stats {
 
     static final class StatsFormatOptions {
         final Formats formats;

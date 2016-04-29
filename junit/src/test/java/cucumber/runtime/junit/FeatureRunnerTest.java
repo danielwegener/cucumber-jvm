@@ -1,10 +1,7 @@
 package cucumber.runtime.junit;
 
-import cucumber.runtime.Backend;
+import cucumber.runtime.*;
 import cucumber.runtime.Runtime;
-import cucumber.runtime.RuntimeGlue;
-import cucumber.runtime.RuntimeOptions;
-import cucumber.runtime.StopWatch;
 import cucumber.runtime.io.ClasspathResourceLoader;
 import cucumber.runtime.model.CucumberFeature;
 import org.junit.Test;
@@ -135,8 +132,9 @@ public class FeatureRunnerTest {
         final ClasspathResourceLoader resourceLoader = new ClasspathResourceLoader(classLoader);
         final RuntimeGlue glue = mock(RuntimeGlue.class);
         final Runtime runtime = new Runtime(resourceLoader, classLoader, asList(mock(Backend.class)), runtimeOptions, StopWatch.Stub.factory(0l), glue);
+        final Stats stats = new Stats();
         FormatterSpy formatterSpy = new FormatterSpy();
-        FeatureRunner runner = new FeatureRunner(cucumberFeature, runtime, new JUnitReporter(formatterSpy, formatterSpy, false));
+        FeatureRunner runner = new FeatureRunner(cucumberFeature, runtime, stats, new JUnitReporter(formatterSpy, formatterSpy, false));
         runner.run(mock(RunNotifier.class));
         return formatterSpy.toString();
     }

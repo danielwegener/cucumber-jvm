@@ -1,19 +1,12 @@
 package cucumber.runtime.junit;
 
-import cucumber.runtime.FeatureBuilder;
 import cucumber.runtime.io.ClasspathResourceLoader;
-import cucumber.runtime.io.Resource;
 import cucumber.runtime.model.CucumberFeature;
 import cucumber.runtime.model.CucumberScenario;
 import gherkin.formatter.model.Step;
 import org.junit.Test;
 import org.junit.runner.Description;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -31,6 +24,7 @@ public class ExecutionUnitRunnerTest {
         );
 
         ExecutionUnitRunner runner = new ExecutionUnitRunner(
+                null,
                 null,
                 (CucumberScenario) features.get(0).getFeatureElements().get(0),
                 null
@@ -60,6 +54,7 @@ public class ExecutionUnitRunnerTest {
 
         ExecutionUnitRunner runner = new ExecutionUnitRunner(
                 null,
+                null,
                 (CucumberScenario) features.get(0).getFeatureElements().get(0),
                 null
         );
@@ -83,6 +78,7 @@ public class ExecutionUnitRunnerTest {
                 "    Then scenario name\n");
 
         ExecutionUnitRunner runner = new ExecutionUnitRunner(
+                null,
                 null,
                 (CucumberScenario) cucumberFeature.getFeatureElements().get(0),
                 null

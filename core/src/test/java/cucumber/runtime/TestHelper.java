@@ -98,9 +98,10 @@ public class TestHelper {
         final ClasspathResourceLoader resourceLoader = new ClasspathResourceLoader(classLoader);
         final RuntimeGlue glue = createMockedRuntimeGlueThatMatchesTheSteps(stepsToResult, stepsToLocation, hooks);
         final Runtime runtime = new Runtime(resourceLoader, classLoader, asList(mock(Backend.class)), runtimeOptions, StopWatch.Stub.factory(stepHookDuration), glue);
+        final Stats stats = new Stats();
 
         for (CucumberFeature feature : features) {
-            feature.run(formatter, reporter, runtime);
+            feature.run(formatter, reporter, runtime, stats);
         }
         formatter.done();
         formatter.close();

@@ -2,6 +2,7 @@ package cucumber.runtime.junit;
 
 import cucumber.runtime.CucumberException;
 import cucumber.runtime.Runtime;
+import cucumber.runtime.Stats;
 import cucumber.runtime.model.CucumberFeature;
 import cucumber.runtime.model.CucumberScenario;
 import cucumber.runtime.model.CucumberScenarioOutline;
@@ -20,13 +21,15 @@ public class FeatureRunner extends ParentRunner<ParentRunner> {
 
     private final CucumberFeature cucumberFeature;
     private final Runtime runtime;
+    private final Stats stats;
     private final JUnitReporter jUnitReporter;
     private Description description;
 
-    public FeatureRunner(CucumberFeature cucumberFeature, Runtime runtime, JUnitReporter jUnitReporter) throws InitializationError {
+    public FeatureRunner(CucumberFeature cucumberFeature, Runtime runtime, Stats stats, JUnitReporter jUnitReporter) throws InitializationError {
         super(null);
         this.cucumberFeature = cucumberFeature;
         this.runtime = runtime;
+        this.stats = stats;
         this.jUnitReporter = jUnitReporter;
         buildFeatureElementRunners();
     }
@@ -76,9 +79,9 @@ public class FeatureRunner extends ParentRunner<ParentRunner> {
             try {
                 ParentRunner featureElementRunner;
                 if (cucumberTagStatement instanceof CucumberScenario) {
-                    featureElementRunner = new ExecutionUnitRunner(runtime, (CucumberScenario) cucumberTagStatement, jUnitReporter);
+                    featureElementRunner = new ExecutionUnitRunner(runtime, stats, (CucumberScenario) cucumberTagStatement, jUnitReporter);
                 } else {
-                    featureElementRunner = new ScenarioOutlineRunner(runtime, (CucumberScenarioOutline) cucumberTagStatement, jUnitReporter);
+                    featureElementRunner = new ScenarioOutlineRunner(runtime, stats, (CucumberScenarioOutline) cucumberTagStatement, jUnitReporter);
                 }
                 children.add(featureElementRunner);
             } catch (InitializationError e) {

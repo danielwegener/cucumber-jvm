@@ -2,6 +2,7 @@ package cucumber.runtime.model;
 
 import cucumber.runtime.FeatureBuilder;
 import cucumber.runtime.Runtime;
+import cucumber.runtime.Stats;
 import cucumber.runtime.io.MultiLoader;
 import cucumber.runtime.io.Resource;
 import cucumber.runtime.io.ResourceLoader;
@@ -156,13 +157,13 @@ public class CucumberFeature {
         return path;
     }
 
-    public void run(Formatter formatter, Reporter reporter, Runtime runtime) {
+    public void run(Formatter formatter, Reporter reporter, Runtime runtime, Stats stats) {
         formatter.uri(getPath());
         formatter.feature(getGherkinFeature());
 
         for (CucumberTagStatement cucumberTagStatement : getFeatureElements()) {
             //Run the scenario, it should handle before and after hooks
-            cucumberTagStatement.run(formatter, reporter, runtime);
+            cucumberTagStatement.run(formatter, reporter, runtime, stats);
         }
         formatter.eof();
 

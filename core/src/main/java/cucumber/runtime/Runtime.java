@@ -45,7 +45,7 @@ public class Runtime implements UnreportedStepExecutor {
     private static final Object DUMMY_ARG = new Object();
     private static final byte ERRORS = 0x1;
 
-    private final Stats stats;
+
     private final Stats.StatsFormatOptions statsFormatOptions;
     final UndefinedStepsTracker undefinedStepsTracker = new UndefinedStepsTracker();
 
@@ -86,7 +86,6 @@ public class Runtime implements UnreportedStepExecutor {
         this.runtimeOptions = runtimeOptions;
         this.stopWatchFactory = stopWatchFactory;
         this.glue = optionalGlue != null ? optionalGlue : new RuntimeGlue(undefinedStepsTracker, new LocalizedXStreams(classLoader));
-        this.stats = new Stats();
         this.statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
 
         for (Backend backend : backends) {
@@ -110,6 +109,7 @@ public class Runtime implements UnreportedStepExecutor {
     public void run() throws IOException {
         // Make sure all features parse before initialising any reporters/formatters
         List<CucumberFeature> features = runtimeOptions.cucumberFeatures(resourceLoader);
+        Stats stats = new Stats();
 
         // TODO: This is duplicated in cucumber.api.android.CucumberInstrumentationCore - refactor or keep uptodate
 
@@ -120,20 +120,20 @@ public class Runtime implements UnreportedStepExecutor {
         glue.reportStepDefinitions(stepDefinitionReporter);
 
         for (CucumberFeature cucumberFeature : features) {
-            cucumberFeature.run(formatter, reporter, this);
+            cucumberFeature.run(formatter, reporter, this, stats);
         }
 
         formatter.done();
         formatter.close();
-        printSummary();
+        printSummary(stats);
     }
 
-    public void printSummary() {
+    public void printSummary(Stats stats) {
         SummaryPrinter summaryPrinter = runtimeOptions.summaryPrinter(classLoader);
-        summaryPrinter.print(this);
+        summaryPrinter.print(this, stats);
     }
 
-    void printStats(PrintStream out) {
+    void printStats(Stats stats, PrintStream out) {
         Stats.StatsFormatter.printStats(stats, statsFormatOptions, out, runtimeOptions.isStrict());
     }
 
@@ -147,8 +147,7 @@ public class Runtime implements UnreportedStepExecutor {
         return new ScenarioImpl(reporter, tags, gherkinScenario);
     }
 
-    public void disposeBackendWorlds(Scenario scenarioResult, String scenarioDesignation) {
-        stats.addScenario(scenarioResult.getStatus(), scenarioDesignation);
+    public void disposeBackendWorlds() {
         for (Backend backend : backends) {
             backend.disposeWorld();
         }
@@ -199,23 +198,23 @@ public class Runtime implements UnreportedStepExecutor {
         return glue;
     }
 
-    public void runBeforeHooks(ScenarioImpl scenarioResult, Reporter reporter, Set<Tag> tags) {
-        runHooks(scenarioResult, glue.getBeforeHooks(), reporter, tags, true, runtimeOptions.isDryRun());
+    public void runBeforeHooks(ScenarioImpl scenarioResult, Stats stats, Reporter reporter, Set<Tag> tags) {
+        runHooks(scenarioResult, stats, glue.getBeforeHooks(), reporter, tags, true, runtimeOptions.isDryRun());
     }
 
-    public void runAfterHooks(ScenarioImpl scenarioResult, Reporter reporter, Set<Tag> tags) {
-        runHooks(scenarioResult, glue.getAfterHooks(), reporter, tags, false, runtimeOptions.isDryRun());
+    public void runAfterHooks(ScenarioImpl scenarioResult, Stats stats, Reporter reporter, Set<Tag> tags) {
+        runHooks(scenarioResult, stats, glue.getAfterHooks(), reporter, tags, false, runtimeOptions.isDryRun());
     }
 
-    private void runHooks(ScenarioImpl scenarioResult, List<HookDefinition> hooks, Reporter reporter, Set<Tag> tags, boolean isBefore, boolean isDryRun) {
+    private void runHooks(ScenarioImpl scenarioResult, Stats stats, List<HookDefinition> hooks, Reporter reporter, Set<Tag> tags, boolean isBefore, boolean isDryRun) {
         if (!isDryRun) {
             for (HookDefinition hook : hooks) {
-                runHookIfTagsMatch(scenarioResult, hook, reporter, tags, isBefore);
+                runHookIfTagsMatch(scenarioResult, stats, hook, reporter, tags, isBefore);
             }
         }
     }
 
-    private void runHookIfTagsMatch(ScenarioImpl scenarioResult, HookDefinition hook, Reporter reporter, Set<Tag> tags, boolean isBefore) {
+    private void runHookIfTagsMatch(ScenarioImpl scenarioResult, Stats stats, HookDefinition hook, Reporter reporter, Set<Tag> tags, boolean isBefore) {
         if (hook.matches(tags)) {
             String status = Result.PASSED;
             Throwable error = null;
@@ -263,7 +262,7 @@ public class Runtime implements UnreportedStepExecutor {
         match.runStep(i18n);
     }
 
-    public void runStep(ScenarioImpl scenarioResult, String featurePath, Step step, Reporter reporter, I18n i18n) {
+    public void runStep(ScenarioImpl scenarioResult, Stats stats, String featurePath, Step step, Reporter reporter, I18n i18n) {
         StepDefinitionMatch match;
 
         try {

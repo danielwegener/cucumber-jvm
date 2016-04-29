@@ -5,13 +5,8 @@ import android.content.Context;
 import android.util.Log;
 import cucumber.api.CucumberOptions;
 import cucumber.api.StepDefinitionReporter;
-import cucumber.runtime.Backend;
-import cucumber.runtime.ClassFinder;
-import cucumber.runtime.CucumberException;
-import cucumber.runtime.Env;
+import cucumber.runtime.*;
 import cucumber.runtime.Runtime;
-import cucumber.runtime.RuntimeOptions;
-import cucumber.runtime.RuntimeOptionsFactory;
 import cucumber.runtime.io.ResourceLoader;
 import cucumber.runtime.java.JavaBackend;
 import cucumber.api.java.ObjectFactory;
@@ -104,12 +99,13 @@ public class CucumberExecutor {
 
         final Reporter reporter = runtimeOptions.reporter(classLoader);
         final Formatter formatter = runtimeOptions.formatter(classLoader);
+        final Stats stats = new Stats();
 
         final StepDefinitionReporter stepDefinitionReporter = runtimeOptions.stepDefinitionReporter(classLoader);
         runtime.getGlue().reportStepDefinitions(stepDefinitionReporter);
 
         for (final CucumberFeature cucumberFeature : cucumberFeatures) {
-            cucumberFeature.run(formatter, reporter, runtime);
+            cucumberFeature.run(formatter, reporter, runtime, stats);
         }
 
         formatter.done();

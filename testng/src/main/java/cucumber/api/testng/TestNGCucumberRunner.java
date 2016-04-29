@@ -1,10 +1,7 @@
 package cucumber.api.testng;
 
-import cucumber.runtime.ClassFinder;
-import cucumber.runtime.CucumberException;
+import cucumber.runtime.*;
 import cucumber.runtime.Runtime;
-import cucumber.runtime.RuntimeOptions;
-import cucumber.runtime.RuntimeOptionsFactory;
 import cucumber.runtime.io.MultiLoader;
 import cucumber.runtime.io.ResourceLoader;
 import cucumber.runtime.io.ResourceLoaderClassFinder;
@@ -19,6 +16,7 @@ import java.util.List;
  */
 public class TestNGCucumberRunner {
     private Runtime runtime;
+    private Stats stats = new Stats();
     private RuntimeOptions runtimeOptions;
     private ResourceLoader resourceLoader;
     private FeatureResultListener resultListener;
@@ -50,7 +48,8 @@ public class TestNGCucumberRunner {
             cucumberFeature.run(
                     runtimeOptions.formatter(classLoader),
                     resultListener,
-                    runtime);
+                    runtime,
+                    stats);
         }
         finish();
         if (!resultListener.isPassed()) {
@@ -63,7 +62,8 @@ public class TestNGCucumberRunner {
         cucumberFeature.run(
                 runtimeOptions.formatter(classLoader),
                 resultListener,
-                runtime);
+                runtime,
+                stats);
 
         if (!resultListener.isPassed()) {
             throw new CucumberException(resultListener.getFirstError());
@@ -75,7 +75,7 @@ public class TestNGCucumberRunner {
 
         formatter.done();
         formatter.close();
-        runtime.printSummary();
+        runtime.printSummary(stats);
     }
 
     /**

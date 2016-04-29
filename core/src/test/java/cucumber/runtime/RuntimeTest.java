@@ -69,7 +69,8 @@ public class RuntimeTest {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         RuntimeOptions runtimeOptions = new RuntimeOptions("");
         Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader, backends, runtimeOptions);
-        feature.run(jsonFormatter, jsonFormatter, runtime);
+        Stats stats = new Stats();
+        feature.run(jsonFormatter, jsonFormatter, runtime, stats);
         jsonFormatter.done();
         String expected = "" +
                 "[\n" +
@@ -255,8 +256,9 @@ public class RuntimeTest {
         StepDefinitionMatch match = mock(StepDefinitionMatch.class);
 
         Runtime runtime = createRuntimeWithMockedGlue(match, "--monochrome");
-        runScenario(reporter, runtime, stepCount(1));
-        runtime.printStats(new PrintStream(baos));
+        Stats stats = new Stats();
+        runScenario(reporter, runtime, stats, stepCount(1));
+        runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), startsWith(String.format(
                 "1 Scenarios (1 passed)%n" +
@@ -270,8 +272,9 @@ public class RuntimeTest {
         StepDefinitionMatch match = createExceptionThrowingMatch(new PendingException());
 
         Runtime runtime = createRuntimeWithMockedGlue(match, "--monochrome");
-        runScenario(reporter, runtime, stepCount(1));
-        runtime.printStats(new PrintStream(baos));
+        Stats stats = new Stats();
+        runScenario(reporter, runtime, stats, stepCount(1));
+        runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), containsString(String.format("" +
                 "1 Scenarios (1 pending)%n" +
@@ -285,8 +288,9 @@ public class RuntimeTest {
         StepDefinitionMatch match = createExceptionThrowingMatch(new Exception());
 
         Runtime runtime = createRuntimeWithMockedGlue(match, "--monochrome");
-        runScenario(reporter, runtime, stepCount(1));
-        runtime.printStats(new PrintStream(baos));
+        Stats stats = new Stats();
+        runScenario(reporter, runtime, stats, stepCount(1));
+        runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), containsString(String.format("" +
                 "1 Scenarios (1 failed)%n" +
@@ -299,8 +303,9 @@ public class RuntimeTest {
         Reporter reporter = mock(Reporter.class);
 
         Runtime runtime = createRuntimeWithMockedGlueWithAmbiguousMatch("--monochrome");
-        runScenario(reporter, runtime, stepCount(1));
-        runtime.printStats(new PrintStream(baos));
+        Stats stats = new Stats();
+        runScenario(reporter, runtime, stats, stepCount(1));
+        runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), containsString(String.format(""+
                 "1 Scenarios (1 failed)%n" +
@@ -314,8 +319,9 @@ public class RuntimeTest {
         StepDefinitionMatch match = createExceptionThrowingMatch(new Exception());
 
         Runtime runtime = createRuntimeWithMockedGlue(match, "--monochrome");
-        runScenario(reporter, runtime, stepCount(2));
-        runtime.printStats(new PrintStream(baos));
+        Stats stats = new Stats();
+        runScenario(reporter, runtime, stats, stepCount(2));
+        runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), containsString(String.format("" +
                 "1 Scenarios (1 failed)%n" +
@@ -328,8 +334,9 @@ public class RuntimeTest {
         Reporter reporter = mock(Reporter.class);
 
         Runtime runtime = createRuntimeWithMockedGlue(null, "--monochrome");
-        runScenario(reporter, runtime, stepCount(1));
-        runtime.printStats(new PrintStream(baos));
+        Stats stats = new Stats();
+        runScenario(reporter, runtime, stats, stepCount(1));
+        runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), containsString(String.format("" +
                 "1 Scenarios (1 undefined)%n" +
@@ -344,8 +351,9 @@ public class RuntimeTest {
         HookDefinition hook = createExceptionThrowingHook();
 
         Runtime runtime = createRuntimeWithMockedGlue(match, hook, true, "--monochrome");
-        runScenario(reporter, runtime, stepCount(1));
-        runtime.printStats(new PrintStream(baos));
+        Stats stats = new Stats();
+        runScenario(reporter, runtime, stats, stepCount(1));
+        runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), containsString(String.format("" +
                 "1 Scenarios (1 failed)%n" +
@@ -360,8 +368,9 @@ public class RuntimeTest {
         HookDefinition hook = createExceptionThrowingHook();
 
         Runtime runtime = createRuntimeWithMockedGlue(match, hook, false, "--monochrome");
-        runScenario(reporter, runtime, stepCount(1));
-        runtime.printStats(new PrintStream(baos));
+        Stats stats = new Stats();
+        runScenario(reporter, runtime, stats, stepCount(1));
+        runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), containsString(String.format("" +
                 "1 Scenarios (1 failed)%n" +
@@ -380,7 +389,8 @@ public class RuntimeTest {
         when(beforeHook.matches(anyCollectionOf(Tag.class))).thenReturn(true);
 
         Runtime runtime = createRuntimeWithMockedGlue(mock(StepDefinitionMatch.class), beforeHook, true);
-        feature.run(mock(Formatter.class), mock(Reporter.class), runtime);
+        Stats stats = new Stats();
+        feature.run(mock(Formatter.class), mock(Reporter.class), runtime, stats);
 
         ArgumentCaptor<Scenario> capturedScenario = ArgumentCaptor.forClass(Scenario.class);
         verify(beforeHook).execute(capturedScenario.capture());
@@ -399,7 +409,8 @@ public class RuntimeTest {
         when(beforeHook.matches(anyCollectionOf(Tag.class))).thenReturn(true);
 
         Runtime runtime = createRuntimeWithMockedGlue(mock(StepDefinitionMatch.class), beforeHook, true);
-        feature.run(mock(Formatter.class), mock(Reporter.class), runtime);
+        Stats stats = new Stats();
+        feature.run(mock(Formatter.class), mock(Reporter.class), runtime, stats);
 
         ArgumentCaptor<Scenario> capturedScenario = ArgumentCaptor.forClass(Scenario.class);
         verify(beforeHook).execute(capturedScenario.capture());
@@ -549,10 +560,10 @@ public class RuntimeTest {
         return hook;
     }
 
-    public void runStep(ScenarioImpl scenarioResult, Reporter reporter, Runtime runtime) {
+    public void runStep(ScenarioImpl scenarioResult, Reporter reporter, Runtime runtime, Stats stats) {
         Step step = mock(Step.class);
         I18n i18n = mock(I18n.class);
-        runtime.runStep(scenarioResult, "<featurePath>", step, reporter, i18n);
+        runtime.runStep(scenarioResult, stats, "<featurePath>", step, reporter, i18n);
     }
 
     private ResourceLoader createResourceLoaderThatFindsNoFeatures() {
@@ -631,15 +642,16 @@ public class RuntimeTest {
         }
     }
 
-    private void runScenario(Reporter reporter, Runtime runtime, int stepCount) {
+    private void runScenario(Reporter reporter, Runtime runtime, Stats stats, int stepCount) {
         gherkin.formatter.model.Scenario gherkinScenario = mock(gherkin.formatter.model.Scenario.class);
         final ScenarioImpl scenarioResult = runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), gherkinScenario);
-        runtime.runBeforeHooks(scenarioResult, reporter, Collections.<Tag>emptySet());
+        runtime.runBeforeHooks(scenarioResult, stats, reporter, Collections.<Tag>emptySet());
         for (int i = 0; i < stepCount; ++i) {
-            runStep(scenarioResult, reporter, runtime);
+            runStep(scenarioResult, reporter, runtime, stats);
         }
-        runtime.runAfterHooks(scenarioResult, reporter, Collections.<Tag>emptySet());
-        runtime.disposeBackendWorlds(scenarioResult, "scenario designation");
+        runtime.runAfterHooks(scenarioResult, stats, reporter, Collections.<Tag>emptySet());
+        runtime.disposeBackendWorlds();
+        stats.addScenario(scenarioResult.getStatus(), "scenario designation");
     }
 
     private int stepCount(int stepCount) {

@@ -1,6 +1,7 @@
 package cucumber.runtime.model;
 
 import cucumber.runtime.Runtime;
+import cucumber.runtime.Stats;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.Reporter;
 import gherkin.formatter.model.Row;
@@ -43,5 +44,5 @@ public abstract class CucumberTagStatement extends StepContainer {
         return gherkinModel;
     }
 
-    public abstract void run(Formatter formatter, Reporter reporter, Runtime runtime);
+    public abstract void run(Formatter formatter, Reporter reporter, Runtime runtime, Stats stats);
 }

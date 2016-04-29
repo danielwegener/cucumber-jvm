@@ -26,6 +26,7 @@ public class HookOrderTest {
     private Runtime runtime;
     private Glue glue;
     private ScenarioImpl scenarioResult;
+    private final Stats stats = new Stats();
 
     @Before
     public void buildMockWorld() {
@@ -43,7 +44,7 @@ public class HookOrderTest {
             glue.addBeforeHook(hook);
         }
 
-        runtime.runBeforeHooks(scenarioResult, mock(Reporter.class), new HashSet<Tag>());
+        runtime.runBeforeHooks(scenarioResult, stats, mock(Reporter.class), new HashSet<Tag>());
 
         InOrder inOrder = inOrder(hooks.toArray());
         inOrder.verify(hooks.get(6)).execute(Matchers.<Scenario>any());
@@ -62,7 +63,7 @@ public class HookOrderTest {
             glue.addAfterHook(hook);
         }
 
-        runtime.runAfterHooks(scenarioResult, mock(Reporter.class), new HashSet<Tag>());
+        runtime.runAfterHooks(scenarioResult, stats, mock(Reporter.class), new HashSet<Tag>());
 
         InOrder inOrder = inOrder(hooks.toArray());
         inOrder.verify(hooks.get(2)).execute(Matchers.<Scenario>any());
@@ -85,7 +86,7 @@ public class HookOrderTest {
             glue.addBeforeHook(hook);
         }
 
-        runtime.runBeforeHooks(scenarioResult, mock(Reporter.class), new HashSet<Tag>());
+        runtime.runBeforeHooks(scenarioResult, stats, mock(Reporter.class), new HashSet<Tag>());
 
         List<HookDefinition> allHooks = new ArrayList<HookDefinition>();
         allHooks.addAll(backend1Hooks);

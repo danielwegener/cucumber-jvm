@@ -46,8 +46,9 @@ public class HookTest {
         RuntimeOptions runtimeOptions = new RuntimeOptions("");
         Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader, asList(backend), runtimeOptions);
         runtime.getGlue().addAfterHook(hook);
+        Stats stats = new Stats();
 
-        scenario.run(mock(Formatter.class), mock(Reporter.class), runtime);
+        scenario.run(mock(Formatter.class), mock(Reporter.class), runtime, stats);
 
         InOrder inOrder = inOrder(hook, backend);
         inOrder.verify(hook).execute(Matchers.<Scenario>any());

@@ -1,6 +1,7 @@
 package cucumber.runtime.junit;
 
 import cucumber.runtime.Runtime;
+import cucumber.runtime.Stats;
 import cucumber.runtime.model.CucumberExamples;
 import cucumber.runtime.model.CucumberScenarioOutline;
 import org.junit.runner.Description;
@@ -17,16 +18,16 @@ public class ScenarioOutlineRunner extends Suite {
     private final JUnitReporter jUnitReporter;
     private Description description;
 
-    public ScenarioOutlineRunner(Runtime runtime, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
-        super(null, buildRunners(runtime, cucumberScenarioOutline, jUnitReporter));
+    public ScenarioOutlineRunner(Runtime runtime, Stats stats, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
+        super(null, buildRunners(runtime, stats, cucumberScenarioOutline, jUnitReporter));
         this.cucumberScenarioOutline = cucumberScenarioOutline;
         this.jUnitReporter = jUnitReporter;
     }
 
-    private static List<Runner> buildRunners(Runtime runtime, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
+    private static List<Runner> buildRunners(Runtime runtime, Stats stats, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
         List<Runner> runners = new ArrayList<Runner>();
         for (CucumberExamples cucumberExamples : cucumberScenarioOutline.getCucumberExamplesList()) {
-            runners.add(new ExamplesRunner(runtime, cucumberExamples, jUnitReporter));
+            runners.add(new ExamplesRunner(runtime, stats, cucumberExamples, jUnitReporter));
         }
         return runners;
     }
