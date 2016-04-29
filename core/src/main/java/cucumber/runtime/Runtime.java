@@ -1,7 +1,6 @@
 package cucumber.runtime;
 
 import cucumber.api.Pending;
-import cucumber.api.Scenario;
 import cucumber.api.StepDefinitionReporter;
 import cucumber.api.SummaryPrinter;
 import cucumber.runtime.io.ResourceLoader;
@@ -58,9 +57,6 @@ public class Runtime implements UnreportedStepExecutor {
     private final ClassLoader classLoader;
     private final StopWatch.StopWatchFactory stopWatchFactory;
 
-    //TODO: These are really state machine variables, and I'm not sure the runtime is the best place for this state machine
-    //They really should be created each time a scenario is run, not in here
-    private boolean skipNextStep = false;
 
     public Runtime(ResourceLoader resourceLoader, ClassFinder classFinder, ClassLoader classLoader, RuntimeOptions runtimeOptions) {
         this(resourceLoader, classLoader, loadBackends(resourceLoader, classFinder), runtimeOptions);
@@ -143,7 +139,6 @@ public class Runtime implements UnreportedStepExecutor {
         }
         undefinedStepsTracker.reset();
         //TODO: this is the initial state of the state machine, it should not go here, but into something else
-        skipNextStep = false;
         return new ScenarioImpl(reporter, tags, gherkinScenario);
     }
 
@@ -198,23 +193,28 @@ public class Runtime implements UnreportedStepExecutor {
         return glue;
     }
 
-    public void runBeforeHooks(ScenarioImpl scenarioResult, Stats stats, Reporter reporter, Set<Tag> tags) {
-        runHooks(scenarioResult, stats, glue.getBeforeHooks(), reporter, tags, true, runtimeOptions.isDryRun());
+    public boolean runBeforeHooks(ScenarioImpl scenarioResult, Stats stats, Reporter reporter, Set<Tag> tags) {
+        return runHooks(scenarioResult, stats, glue.getBeforeHooks(), reporter, tags, true, runtimeOptions.isDryRun());
     }
 
-    public void runAfterHooks(ScenarioImpl scenarioResult, Stats stats, Reporter reporter, Set<Tag> tags) {
-        runHooks(scenarioResult, stats, glue.getAfterHooks(), reporter, tags, false, runtimeOptions.isDryRun());
+    public boolean runAfterHooks(ScenarioImpl scenarioResult, Stats stats, Reporter reporter, Set<Tag> tags) {
+        return runHooks(scenarioResult, stats, glue.getAfterHooks(), reporter, tags, false, runtimeOptions.isDryRun());
     }
 
-    private void runHooks(ScenarioImpl scenarioResult, Stats stats, List<HookDefinition> hooks, Reporter reporter, Set<Tag> tags, boolean isBefore, boolean isDryRun) {
+    private boolean runHooks(ScenarioImpl scenarioResult, Stats stats, List<HookDefinition> hooks, Reporter reporter, Set<Tag> tags, boolean isBefore, boolean isDryRun) {
+        boolean skipNextStep = false;
         if (!isDryRun) {
             for (HookDefinition hook : hooks) {
-                runHookIfTagsMatch(scenarioResult, stats, hook, reporter, tags, isBefore);
+                if (runHookIfTagsMatch(scenarioResult, stats, hook, reporter, tags, isBefore)) {
+                    skipNextStep = true;
+                }
             }
         }
+        return skipNextStep;
     }
 
-    private void runHookIfTagsMatch(ScenarioImpl scenarioResult, Stats stats, HookDefinition hook, Reporter reporter, Set<Tag> tags, boolean isBefore) {
+    private boolean runHookIfTagsMatch(ScenarioImpl scenarioResult, Stats stats, HookDefinition hook, Reporter reporter, Set<Tag> tags, boolean isBefore) {
+        boolean skipNextStep = false;
         if (hook.matches(tags)) {
             String status = Result.PASSED;
             Throwable error = null;
@@ -240,6 +240,7 @@ public class Runtime implements UnreportedStepExecutor {
                 }
             }
         }
+        return skipNextStep;
     }
 
     //TODO: Maybe this should go into the cucumber step execution model and it should return the result of that execution!
@@ -262,7 +263,8 @@ public class Runtime implements UnreportedStepExecutor {
         match.runStep(i18n);
     }
 
-    public void runStep(ScenarioImpl scenarioResult, Stats stats, String featurePath, Step step, Reporter reporter, I18n i18n) {
+    /** returns {@code true} if the next step should be skipped */
+    public boolean runStep(ScenarioImpl scenarioResult, Stats stats, String featurePath, Step step, Reporter reporter, I18n i18n, boolean skip) {
         StepDefinitionMatch match;
 
         try {
@@ -274,8 +276,7 @@ public class Runtime implements UnreportedStepExecutor {
             scenarioResult.add(result);
             stats.addStep(result);
             addError(e);
-            skipNextStep = true;
-            return;
+            return true;
         }
 
         if (match == null) {
@@ -283,25 +284,24 @@ public class Runtime implements UnreportedStepExecutor {
             reporter.result(Result.UNDEFINED);
             scenarioResult.add(Result.UNDEFINED);
             stats.addStep(Result.UNDEFINED);
-            skipNextStep = true;
-            return;
+            return true;
         }
 
         reporter.match(match);
 
-        if (runtimeOptions.isDryRun()) {
-            skipNextStep = true;
-        }
-
-        if (skipNextStep) {
+        if (skip || runtimeOptions.isDryRun()) {
             scenarioResult.add(Result.SKIPPED);
             stats.addStep(Result.SKIPPED);
             reporter.result(Result.SKIPPED);
+            return true;
+
         } else {
             String status = Result.PASSED;
             Throwable error = null;
             final StopWatch stopWatch = stopWatchFactory.create();
             stopWatch.start();
+            boolean skipNextStep = skip;
+
             try {
                 match.runStep(i18n);
             } catch (Throwable t) {
@@ -316,6 +316,7 @@ public class Runtime implements UnreportedStepExecutor {
                 stats.addStep(result);
                 reporter.result(result);
             }
+            return skipNextStep;
         }
     }
 

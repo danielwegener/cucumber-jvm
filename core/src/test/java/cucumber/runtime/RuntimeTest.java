@@ -560,10 +560,10 @@ public class RuntimeTest {
         return hook;
     }
 
-    public void runStep(ScenarioImpl scenarioResult, Reporter reporter, Runtime runtime, Stats stats) {
+    public boolean runStep(ScenarioImpl scenarioResult, Reporter reporter, Runtime runtime, Stats stats, boolean skip) {
         Step step = mock(Step.class);
         I18n i18n = mock(I18n.class);
-        runtime.runStep(scenarioResult, stats, "<featurePath>", step, reporter, i18n);
+        return runtime.runStep(scenarioResult, stats, "<featurePath>", step, reporter, i18n, skip);
     }
 
     private ResourceLoader createResourceLoaderThatFindsNoFeatures() {
@@ -645,9 +645,9 @@ public class RuntimeTest {
     private void runScenario(Reporter reporter, Runtime runtime, Stats stats, int stepCount) {
         gherkin.formatter.model.Scenario gherkinScenario = mock(gherkin.formatter.model.Scenario.class);
         final ScenarioImpl scenarioResult = runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), gherkinScenario);
-        runtime.runBeforeHooks(scenarioResult, stats, reporter, Collections.<Tag>emptySet());
+        boolean skipNext = runtime.runBeforeHooks(scenarioResult, stats, reporter, Collections.<Tag>emptySet());
         for (int i = 0; i < stepCount; ++i) {
-            runStep(scenarioResult, reporter, runtime, stats);
+            skipNext = runStep(scenarioResult, reporter, runtime, stats, skipNext);
         }
         runtime.runAfterHooks(scenarioResult, stats, reporter, Collections.<Tag>emptySet());
         runtime.disposeBackendWorlds();

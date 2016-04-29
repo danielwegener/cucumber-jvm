@@ -39,11 +39,13 @@ public class CucumberScenario extends CucumberTagStatement {
         Set<Tag> tags = tagsAndInheritedTags();
         final ScenarioImpl scenarioResult = runtime.buildBackendWorlds(reporter, tags, this.scenario);
         formatter.startOfScenarioLifeCycle((Scenario) getGherkinModel());
-        runtime.runBeforeHooks(scenarioResult, stats, reporter, tags);
 
-        runBackground(scenarioResult, formatter, reporter, runtime, stats);
+        boolean skipNext = runtime.runBeforeHooks(scenarioResult, stats, reporter, tags);
+
+
+        skipNext = runBackground(scenarioResult, formatter, reporter, runtime, stats, skipNext);
         format(formatter);
-        runSteps(scenarioResult, stats, reporter, runtime);
+        runSteps(scenarioResult, stats, reporter, runtime, skipNext);
 
         runtime.runAfterHooks(scenarioResult, stats, reporter, tags);
         formatter.endOfScenarioLifeCycle((Scenario) getGherkinModel());
@@ -56,10 +58,11 @@ public class CucumberScenario extends CucumberTagStatement {
                 scenario.getKeyword() + ": " + scenario.getName();
     }
 
-    private void runBackground(ScenarioImpl scenarioResult, Formatter formatter, Reporter reporter, Runtime runtime, Stats stats) {
+    private boolean runBackground(ScenarioImpl scenarioResult, Formatter formatter, Reporter reporter, Runtime runtime, Stats stats, boolean skipNext) {
         if (cucumberBackground != null) {
             cucumberBackground.format(formatter);
-            cucumberBackground.runSteps(scenarioResult, stats, reporter, runtime);
+            return cucumberBackground.runSteps(scenarioResult, stats, reporter, runtime, skipNext);
         }
+        return skipNext;
     }
 }

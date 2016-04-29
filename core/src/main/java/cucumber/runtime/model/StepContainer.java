@@ -36,13 +36,17 @@ public class StepContainer {
         }
     }
 
-    void runSteps(ScenarioImpl scenarioResult, Stats stats, Reporter reporter, Runtime runtime) {
+    boolean runSteps(ScenarioImpl scenarioResult, Stats stats, Reporter reporter, Runtime runtime, boolean skip) {
+        boolean skipNext = skip;
         for (Step step : getSteps()) {
-            runStep(scenarioResult, stats, step, reporter, runtime);
+            if (runStep(scenarioResult, stats, step, reporter, runtime, skipNext)) {
+                skipNext = true;
+            }
         }
+        return skipNext;
     }
 
-    void runStep(ScenarioImpl scenarioResult, Stats stats, Step step, Reporter reporter, Runtime runtime) {
-        runtime.runStep(scenarioResult, stats, cucumberFeature.getPath(), step, reporter, cucumberFeature.getI18n());
+    boolean runStep(ScenarioImpl scenarioResult, Stats stats, Step step, Reporter reporter, Runtime runtime, boolean skip) {
+        return runtime.runStep(scenarioResult, stats, cucumberFeature.getPath(), step, reporter, cucumberFeature.getI18n(), skip);
     }
 }
