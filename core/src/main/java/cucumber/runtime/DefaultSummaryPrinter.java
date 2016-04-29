@@ -13,11 +13,11 @@ public class DefaultSummaryPrinter implements SummaryPrinter {
     }
 
     @Override
-    public void print(cucumber.runtime.Runtime runtime, Stats stats) {
+    public void print(cucumber.runtime.Runtime runtime, Stats stats, List<Throwable> errors) {
         out.println();
         printStats(runtime, stats);
         out.println();
-        printErrors(runtime.getErrors());
+        printErrors(errors);
         printSnippets(runtime.getSnippets());
     }
 

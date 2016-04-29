@@ -51,7 +51,6 @@ public class Runtime implements UnreportedStepExecutor {
     private final Glue glue;
     private final RuntimeOptions runtimeOptions;
 
-    private final List<Throwable> errors = new ArrayList<Throwable>();
     private final Collection<? extends Backend> backends;
     private final ResourceLoader resourceLoader;
     private final ClassLoader classLoader;
@@ -95,17 +94,24 @@ public class Runtime implements UnreportedStepExecutor {
         return reflections.instantiateSubclasses(Backend.class, "cucumber.runtime", new Class[]{ResourceLoader.class}, new Object[]{resourceLoader});
     }
 
-    public void addError(Throwable error) {
-        errors.add(error);
+    public static final class RuntimeRunResult {
+        public final byte exitStatus;
+        public final List<Throwable> errors;
+
+        public RuntimeRunResult(byte exitCode, List<Throwable> errors) {
+            this.exitStatus = exitCode;
+            this.errors = errors;
+        }
     }
 
     /**
      * This is the main entry point. Used from CLI, but not from JUnit.
      */
-    public void run() throws IOException {
+    public RuntimeRunResult run() throws IOException {
         // Make sure all features parse before initialising any reporters/formatters
         List<CucumberFeature> features = runtimeOptions.cucumberFeatures(resourceLoader);
         Stats stats = new Stats();
+        List<Throwable> errors = new ArrayList<Throwable>();
 
         // TODO: This is duplicated in cucumber.api.android.CucumberInstrumentationCore - refactor or keep uptodate
 
@@ -116,17 +122,18 @@ public class Runtime implements UnreportedStepExecutor {
         glue.reportStepDefinitions(stepDefinitionReporter);
 
         for (CucumberFeature cucumberFeature : features) {
-            cucumberFeature.run(formatter, reporter, this, stats);
+            cucumberFeature.run(formatter, reporter, this, stats, errors);
         }
 
         formatter.done();
         formatter.close();
-        printSummary(stats);
+        printSummary(stats, errors);
+        return new RuntimeRunResult(exitStatus(errors), errors);
     }
 
-    public void printSummary(Stats stats) {
+    public void printSummary(Stats stats, List<Throwable> errors) {
         SummaryPrinter summaryPrinter = runtimeOptions.summaryPrinter(classLoader);
-        summaryPrinter.print(this, stats);
+        summaryPrinter.print(this, stats, errors);
     }
 
     void printStats(Stats stats, PrintStream out) {
@@ -148,35 +155,32 @@ public class Runtime implements UnreportedStepExecutor {
         }
     }
 
-    public List<Throwable> getErrors() {
-        return errors;
-    }
 
-    public byte exitStatus() {
+    public byte exitStatus(List<Throwable> errors) {
         byte result = 0x0;
-        if (hasErrors() || hasUndefinedOrPendingStepsAndIsStrict()) {
+        if (hasErrors(errors) || hasUndefinedOrPendingStepsAndIsStrict(errors)) {
             result |= ERRORS;
         }
         return result;
     }
 
-    private boolean hasUndefinedOrPendingStepsAndIsStrict() {
-        return runtimeOptions.isStrict() && hasUndefinedOrPendingSteps();
+    private boolean hasUndefinedOrPendingStepsAndIsStrict(List<Throwable> errors) {
+        return runtimeOptions.isStrict() && hasUndefinedOrPendingSteps(errors);
     }
 
-    private boolean hasUndefinedOrPendingSteps() {
-        return hasUndefinedSteps() || hasPendingSteps();
+    private boolean hasUndefinedOrPendingSteps(List<Throwable> throwables) {
+        return hasUndefinedSteps() || hasPendingSteps(throwables);
     }
 
     private boolean hasUndefinedSteps() {
         return undefinedStepsTracker.hasUndefinedSteps();
     }
 
-    private boolean hasPendingSteps() {
-        return !errors.isEmpty() && !hasErrors();
+    private boolean hasPendingSteps(List<Throwable> errors) {
+        return !errors.isEmpty() && !hasErrors(errors);
     }
 
-    private boolean hasErrors() {
+    private boolean hasErrors(List<Throwable> errors) {
         for (Throwable error : errors) {
             if (!isPending(error)) {
                 return true;
@@ -193,19 +197,19 @@ public class Runtime implements UnreportedStepExecutor {
         return glue;
     }
 
-    public boolean runBeforeHooks(ScenarioImpl scenarioResult, Stats stats, Reporter reporter, Set<Tag> tags) {
-        return runHooks(scenarioResult, stats, glue.getBeforeHooks(), reporter, tags, true, runtimeOptions.isDryRun());
+    public boolean runBeforeHooks(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, Reporter reporter, Set<Tag> tags) {
+        return runHooks(scenarioResult, stats, errors, glue.getBeforeHooks(), reporter, tags, true, runtimeOptions.isDryRun());
     }
 
-    public boolean runAfterHooks(ScenarioImpl scenarioResult, Stats stats, Reporter reporter, Set<Tag> tags) {
-        return runHooks(scenarioResult, stats, glue.getAfterHooks(), reporter, tags, false, runtimeOptions.isDryRun());
+    public boolean runAfterHooks(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, Reporter reporter, Set<Tag> tags) {
+        return runHooks(scenarioResult, stats, errors, glue.getAfterHooks(), reporter, tags, false, runtimeOptions.isDryRun());
     }
 
-    private boolean runHooks(ScenarioImpl scenarioResult, Stats stats, List<HookDefinition> hooks, Reporter reporter, Set<Tag> tags, boolean isBefore, boolean isDryRun) {
+    private boolean runHooks(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, List<HookDefinition> hooks, Reporter reporter, Set<Tag> tags, boolean isBefore, boolean isDryRun) {
         boolean skipNextStep = false;
         if (!isDryRun) {
             for (HookDefinition hook : hooks) {
-                if (runHookIfTagsMatch(scenarioResult, stats, hook, reporter, tags, isBefore)) {
+                if (runHookIfTagsMatch(scenarioResult, stats, hook, reporter, tags, errors, isBefore)) {
                     skipNextStep = true;
                 }
             }
@@ -213,7 +217,7 @@ public class Runtime implements UnreportedStepExecutor {
         return skipNextStep;
     }
 
-    private boolean runHookIfTagsMatch(ScenarioImpl scenarioResult, Stats stats, HookDefinition hook, Reporter reporter, Set<Tag> tags, boolean isBefore) {
+    private boolean runHookIfTagsMatch(ScenarioImpl scenarioResult, Stats stats, HookDefinition hook, Reporter reporter, Set<Tag> tags, List<Throwable> errors, boolean isBefore) {
         boolean skipNextStep = false;
         if (hook.matches(tags)) {
             String status = Result.PASSED;
@@ -226,7 +230,7 @@ public class Runtime implements UnreportedStepExecutor {
             } catch (Throwable t) {
                 error = t;
                 status = isPending(t) ? "pending" : Result.FAILED;
-                addError(t);
+                errors.add(t);
                 skipNextStep = true;
             } finally {
                 long duration = stopWatch.stop();
@@ -264,7 +268,7 @@ public class Runtime implements UnreportedStepExecutor {
     }
 
     /** returns {@code true} if the next step should be skipped */
-    public boolean runStep(ScenarioImpl scenarioResult, Stats stats, String featurePath, Step step, Reporter reporter, I18n i18n, boolean skip) {
+    public boolean runStep(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, String featurePath, Step step, Reporter reporter, I18n i18n, boolean skip) {
         StepDefinitionMatch match;
 
         try {
@@ -275,7 +279,7 @@ public class Runtime implements UnreportedStepExecutor {
             reporter.result(result);
             scenarioResult.add(result);
             stats.addStep(result);
-            addError(e);
+            errors.add(e);
             return true;
         }
 
@@ -307,7 +311,7 @@ public class Runtime implements UnreportedStepExecutor {
             } catch (Throwable t) {
                 error = t;
                 status = isPending(t) ? "pending" : Result.FAILED;
-                addError(t);
+                errors.add(t);
                 skipNextStep = true;
             } finally {
                 long duration = stopWatch.stop();

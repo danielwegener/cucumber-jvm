@@ -100,14 +100,18 @@ public class CucumberExecutor {
         final Reporter reporter = runtimeOptions.reporter(classLoader);
         final Formatter formatter = runtimeOptions.formatter(classLoader);
         final Stats stats = new Stats();
+        final List<Throwable> errors = new ArrayList<Throwable>();
 
         final StepDefinitionReporter stepDefinitionReporter = runtimeOptions.stepDefinitionReporter(classLoader);
         runtime.getGlue().reportStepDefinitions(stepDefinitionReporter);
 
         for (final CucumberFeature cucumberFeature : cucumberFeatures) {
-            cucumberFeature.run(formatter, reporter, runtime, stats);
+            cucumberFeature.run(formatter, reporter, runtime, stats, errors);
         }
 
+        if (formatter instanceof AndroidLogcatReporter) {
+            ((AndroidLogcatReporter)formatter).setErrorsBeforeDone(errors);
+        }
         formatter.done();
         formatter.close();
     }

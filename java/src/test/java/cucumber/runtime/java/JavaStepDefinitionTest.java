@@ -16,10 +16,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -49,6 +46,7 @@ public class JavaStepDefinitionTest {
     private final RuntimeOptions runtimeOptions = new RuntimeOptions("");
     private final Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader, asList(backend), runtimeOptions);
     private final Stats stats = new Stats();
+    private final List<Throwable> errors = new ArrayList<Throwable>();
     private final Glue glue = runtime.getGlue();
 
     @org.junit.Before
@@ -70,8 +68,8 @@ public class JavaStepDefinitionTest {
         Reporter reporter = mock(Reporter.class);
         final ScenarioImpl scenarioResult = runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), mock(Scenario.class));
         Tag tag = new Tag("@foo", 0);
-        boolean skipNext = runtime.runBeforeHooks(scenarioResult, stats, reporter, asSet(tag));
-        runtime.runStep(scenarioResult, stats, "some.feature", new Step(NO_COMMENTS, "Given ", "three blind mice", 1, null, null), reporter, ENGLISH, skipNext);
+        boolean skipNext = runtime.runBeforeHooks(scenarioResult, stats, errors, reporter, asSet(tag));
+        runtime.runStep(scenarioResult, stats, errors, "some.feature", new Step(NO_COMMENTS, "Given ", "three blind mice", 1, null, null), reporter, ENGLISH, skipNext);
 
         ArgumentCaptor<Result> result = ArgumentCaptor.forClass(Result.class);
         verify(reporter).result(result.capture());
@@ -115,9 +113,9 @@ public class JavaStepDefinitionTest {
         final ScenarioImpl scenarioResult = runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), mock(Scenario.class));
         Tag tag = new Tag("@foo", 0);
         Set<Tag> tags = asSet(tag);
-        final boolean skipNext = runtime.runBeforeHooks(scenarioResult, stats, reporter, tags);
+        final boolean skipNext = runtime.runBeforeHooks(scenarioResult, stats, errors, reporter, tags);
         Step step = new Step(NO_COMMENTS, "Given ", "three blind mice", 1, null, null);
-        runtime.runStep(scenarioResult, stats, "some.feature", step, reporter, ENGLISH, skipNext);
+        runtime.runStep(scenarioResult, stats, errors, "some.feature", step, reporter, ENGLISH, skipNext);
         assertTrue(defs.foo);
         assertFalse(defs.bar);
     }

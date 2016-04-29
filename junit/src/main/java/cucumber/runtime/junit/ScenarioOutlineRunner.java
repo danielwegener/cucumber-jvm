@@ -18,16 +18,16 @@ public class ScenarioOutlineRunner extends Suite {
     private final JUnitReporter jUnitReporter;
     private Description description;
 
-    public ScenarioOutlineRunner(Runtime runtime, Stats stats, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
-        super(null, buildRunners(runtime, stats, cucumberScenarioOutline, jUnitReporter));
+    public ScenarioOutlineRunner(Runtime runtime, Stats stats, List<Throwable> errors, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
+        super(null, buildRunners(runtime, stats, errors, cucumberScenarioOutline, jUnitReporter));
         this.cucumberScenarioOutline = cucumberScenarioOutline;
         this.jUnitReporter = jUnitReporter;
     }
 
-    private static List<Runner> buildRunners(Runtime runtime, Stats stats, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
+    private static List<Runner> buildRunners(Runtime runtime, Stats stats, List<Throwable> errors, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
         List<Runner> runners = new ArrayList<Runner>();
         for (CucumberExamples cucumberExamples : cucumberScenarioOutline.getCucumberExamplesList()) {
-            runners.add(new ExamplesRunner(runtime, stats, cucumberExamples, jUnitReporter));
+            runners.add(new ExamplesRunner(runtime, stats, errors, cucumberExamples, jUnitReporter));
         }
         return runners;
     }

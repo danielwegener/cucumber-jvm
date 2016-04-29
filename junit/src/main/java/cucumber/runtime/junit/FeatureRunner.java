@@ -22,14 +22,16 @@ public class FeatureRunner extends ParentRunner<ParentRunner> {
     private final CucumberFeature cucumberFeature;
     private final Runtime runtime;
     private final Stats stats;
+    private final List<Throwable> errors;
     private final JUnitReporter jUnitReporter;
     private Description description;
 
-    public FeatureRunner(CucumberFeature cucumberFeature, Runtime runtime, Stats stats, JUnitReporter jUnitReporter) throws InitializationError {
+    public FeatureRunner(CucumberFeature cucumberFeature, Runtime runtime, Stats stats, List<Throwable> errors, JUnitReporter jUnitReporter) throws InitializationError {
         super(null);
         this.cucumberFeature = cucumberFeature;
         this.runtime = runtime;
         this.stats = stats;
+        this.errors = errors;
         this.jUnitReporter = jUnitReporter;
         buildFeatureElementRunners();
     }
@@ -79,9 +81,9 @@ public class FeatureRunner extends ParentRunner<ParentRunner> {
             try {
                 ParentRunner featureElementRunner;
                 if (cucumberTagStatement instanceof CucumberScenario) {
-                    featureElementRunner = new ExecutionUnitRunner(runtime, stats, (CucumberScenario) cucumberTagStatement, jUnitReporter);
+                    featureElementRunner = new ExecutionUnitRunner(runtime, stats, errors, (CucumberScenario) cucumberTagStatement, jUnitReporter);
                 } else {
-                    featureElementRunner = new ScenarioOutlineRunner(runtime, stats, (CucumberScenarioOutline) cucumberTagStatement, jUnitReporter);
+                    featureElementRunner = new ScenarioOutlineRunner(runtime, stats, errors, (CucumberScenarioOutline) cucumberTagStatement, jUnitReporter);
                 }
                 children.add(featureElementRunner);
             } catch (InitializationError e) {

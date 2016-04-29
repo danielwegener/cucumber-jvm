@@ -33,7 +33,6 @@ public class Main {
         ResourceLoader resourceLoader = new MultiLoader(classLoader);
         ClassFinder classFinder = new ResourceLoaderClassFinder(resourceLoader, classLoader);
         Runtime runtime = new Runtime(resourceLoader, classFinder, classLoader, runtimeOptions);
-        runtime.run();
-        return runtime.exitStatus();
+        return runtime.run().exitStatus;
     }
 }

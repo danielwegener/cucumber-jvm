@@ -157,13 +157,13 @@ public class CucumberFeature {
         return path;
     }
 
-    public void run(Formatter formatter, Reporter reporter, Runtime runtime, Stats stats) {
+    public void run(Formatter formatter, Reporter reporter, Runtime runtime, Stats stats, List<Throwable> errors) {
         formatter.uri(getPath());
         formatter.feature(getGherkinFeature());
 
         for (CucumberTagStatement cucumberTagStatement : getFeatureElements()) {
             //Run the scenario, it should handle before and after hooks
-            cucumberTagStatement.run(formatter, reporter, runtime, stats);
+            cucumberTagStatement.run(formatter, reporter, runtime, stats, errors);
         }
         formatter.eof();
 

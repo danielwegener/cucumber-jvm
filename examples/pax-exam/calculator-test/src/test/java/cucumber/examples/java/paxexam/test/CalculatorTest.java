@@ -81,13 +81,13 @@ public class CalculatorTest {
 
         final Runtime runtime = new Runtime(resourceLoader, classLoader, Collections.singleton(backend), runtimeOptions);
 
-        runtime.run();
+        final Runtime.RuntimeRunResult runtimeRunResult = runtime.run();
 
-        if (!runtime.getErrors().isEmpty()) {
-            throw new CucumberException(runtime.getErrors().get(0));
-        } else if (runtime.exitStatus() != 0x00) {
+        if (!runtimeRunResult.errors.isEmpty()) {
+            throw new CucumberException(runtimeRunResult.errors.get(0));
+        } else if (runtimeRunResult.exitStatus != 0x00) {
             throw new CucumberException("There are pending or undefined steps.");
         }
-        assertEquals(runtime.getErrors().size(), 0);
+        assertEquals(runtimeRunResult.errors.size(), 0);
     }
 }

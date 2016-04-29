@@ -8,6 +8,8 @@ import gherkin.formatter.model.Feature;
 import gherkin.formatter.model.Scenario;
 import gherkin.formatter.model.ScenarioOutline;
 import gherkin.formatter.model.Step;
+
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -19,6 +21,8 @@ public class  AndroidLogcatReporter extends NoOpFormattingReporter {
      * The {@link cucumber.runtime.Runtime} to get the errors and snippets from for writing them to the logcat at the end of the execution.
      */
     private final Runtime runtime;
+
+    private List<Throwable> errors = Collections.emptyList();
 
     /**
      * The log tag to be used when logging to logcat.
@@ -81,9 +85,13 @@ public class  AndroidLogcatReporter extends NoOpFormattingReporter {
         Log.e(logTag, String.format("syntax error '%s' %s:%d", event, uri, line));
     }
 
+    public void setErrorsBeforeDone(List<Throwable> errors) {
+        this.errors = errors;
+    }
+
     @Override
     public void done() {
-        for (final Throwable throwable : runtime.getErrors()) {
+        for (final Throwable throwable : errors) {
             Log.e(logTag, throwable.toString());
         }
 

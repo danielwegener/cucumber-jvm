@@ -2,10 +2,12 @@ package cucumber.runtime;
 
 import cucumber.api.SummaryPrinter;
 
+import java.util.List;
+
 public class NullSummaryPrinter implements SummaryPrinter {
 
     @Override
-    public void print(Runtime runtime, Stats stats) {
+    public void print(Runtime runtime, Stats stats, List<Throwable> errors) {
         // Do nothing
     }
 

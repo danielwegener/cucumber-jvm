@@ -6,6 +6,8 @@ import gherkin.formatter.PrettyFormatter;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static cucumber.runtime.TestHelper.feature;
 import static java.util.Arrays.asList;
@@ -19,6 +21,7 @@ public class BackgroundTest {
         RuntimeOptions runtimeOptions = new RuntimeOptions("");
         Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader, asList(mock(Backend.class)), runtimeOptions);
         Stats stats = new Stats();
+        List<Throwable> errors = new ArrayList<Throwable>();
         CucumberFeature feature = feature("test.feature", "" +
                 "Feature:\n" +
                 "  Background:\n" +
@@ -28,7 +31,7 @@ public class BackgroundTest {
 
         StringBuilder out = new StringBuilder();
         PrettyFormatter pretty = new PrettyFormatter(out, true, true);
-        feature.run(pretty, pretty, runtime, stats);
+        feature.run(pretty, pretty, runtime, stats, errors);
         String expectedOutput = "" +
                 "Feature: \n" +
                 "\n" +

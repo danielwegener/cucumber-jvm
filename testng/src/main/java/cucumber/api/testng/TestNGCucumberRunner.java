@@ -17,6 +17,7 @@ import java.util.List;
 public class TestNGCucumberRunner {
     private Runtime runtime;
     private Stats stats = new Stats();
+    private List<Throwable> errors = new ArrayList<Throwable>();
     private RuntimeOptions runtimeOptions;
     private ResourceLoader resourceLoader;
     private FeatureResultListener resultListener;
@@ -49,7 +50,8 @@ public class TestNGCucumberRunner {
                     runtimeOptions.formatter(classLoader),
                     resultListener,
                     runtime,
-                    stats);
+                    stats,
+                    errors);
         }
         finish();
         if (!resultListener.isPassed()) {
@@ -63,7 +65,8 @@ public class TestNGCucumberRunner {
                 runtimeOptions.formatter(classLoader),
                 resultListener,
                 runtime,
-                stats);
+                stats,
+                errors);
 
         if (!resultListener.isPassed()) {
             throw new CucumberException(resultListener.getFirstError());
@@ -75,7 +78,7 @@ public class TestNGCucumberRunner {
 
         formatter.done();
         formatter.close();
-        runtime.printSummary(stats);
+        runtime.printSummary(stats, errors);
     }
 
     /**

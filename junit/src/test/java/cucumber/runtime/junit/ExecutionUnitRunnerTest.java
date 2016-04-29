@@ -26,6 +26,7 @@ public class ExecutionUnitRunnerTest {
         ExecutionUnitRunner runner = new ExecutionUnitRunner(
                 null,
                 null,
+                null,
                 (CucumberScenario) features.get(0).getFeatureElements().get(0),
                 null
         );
@@ -55,6 +56,7 @@ public class ExecutionUnitRunnerTest {
         ExecutionUnitRunner runner = new ExecutionUnitRunner(
                 null,
                 null,
+                null,
                 (CucumberScenario) features.get(0).getFeatureElements().get(0),
                 null
         );
@@ -78,6 +80,7 @@ public class ExecutionUnitRunnerTest {
                 "    Then scenario name\n");
 
         ExecutionUnitRunner runner = new ExecutionUnitRunner(
+                null,
                 null,
                 null,
                 (CucumberScenario) cucumberFeature.getFeatureElements().get(0),

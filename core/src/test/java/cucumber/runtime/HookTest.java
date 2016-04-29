@@ -13,6 +13,7 @@ import org.mockito.InOrder;
 import org.mockito.Matchers;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static java.util.Arrays.asList;
 import static org.mockito.Matchers.anyListOf;
@@ -47,8 +48,9 @@ public class HookTest {
         Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader, asList(backend), runtimeOptions);
         runtime.getGlue().addAfterHook(hook);
         Stats stats = new Stats();
+        List<Throwable> errors = new ArrayList<Throwable>();
 
-        scenario.run(mock(Formatter.class), mock(Reporter.class), runtime, stats);
+        scenario.run(mock(Formatter.class), mock(Reporter.class), runtime, stats, errors);
 
         InOrder inOrder = inOrder(hook, backend);
         inOrder.verify(hook).execute(Matchers.<Scenario>any());

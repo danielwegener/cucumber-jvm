@@ -20,16 +20,18 @@ import java.util.Map;
 public class ExecutionUnitRunner extends ParentRunner<Step> {
     private final Runtime runtime;
     private final Stats stats;
+    private final List<Throwable> errors;
     private final CucumberScenario cucumberScenario;
     private final JUnitReporter jUnitReporter;
     private Description description;
     private final Map<Step, Description> stepDescriptions = new HashMap<Step, Description>();
     private final List<Step> runnerSteps = new ArrayList<Step>();
 
-    public ExecutionUnitRunner(Runtime runtime, Stats stats, CucumberScenario cucumberScenario, JUnitReporter jUnitReporter) throws InitializationError {
+    public ExecutionUnitRunner(Runtime runtime, Stats stats, List<Throwable> errors, CucumberScenario cucumberScenario, JUnitReporter jUnitReporter) throws InitializationError {
         super(ExecutionUnitRunner.class);
         this.runtime = runtime;
         this.stats = stats;
+        this.errors = errors;
         this.cucumberScenario = cucumberScenario;
         this.jUnitReporter = jUnitReporter;
     }
@@ -91,7 +93,7 @@ public class ExecutionUnitRunner extends ParentRunner<Step> {
     public void run(final RunNotifier notifier) {
         jUnitReporter.startExecutionUnit(this, notifier);
         // This causes runChild to never be called, which seems OK.
-        cucumberScenario.run(jUnitReporter, jUnitReporter, runtime, stats);
+        cucumberScenario.run(jUnitReporter, jUnitReporter, runtime, stats, errors);
         jUnitReporter.finishExecutionUnit();
     }
 

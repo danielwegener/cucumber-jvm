@@ -9,6 +9,7 @@ import gherkin.formatter.model.Tag;
 import gherkin.formatter.model.TagStatement;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static gherkin.util.FixJava.join;
@@ -44,5 +45,5 @@ public abstract class CucumberTagStatement extends StepContainer {
         return gherkinModel;
     }
 
-    public abstract void run(Formatter formatter, Reporter reporter, Runtime runtime, Stats stats);
+    public abstract void run(Formatter formatter, Reporter reporter, Runtime runtime, Stats stats, List<Throwable> errors);
 }
