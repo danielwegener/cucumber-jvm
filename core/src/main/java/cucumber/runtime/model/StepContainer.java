@@ -1,6 +1,7 @@
 package cucumber.runtime.model;
 
 import cucumber.runtime.Runtime;
+import cucumber.runtime.ScenarioImpl;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.Reporter;
 import gherkin.formatter.model.BasicStatement;
@@ -34,13 +35,13 @@ public class StepContainer {
         }
     }
 
-    void runSteps(Reporter reporter, Runtime runtime) {
+    void runSteps(ScenarioImpl scenarioResult, Reporter reporter, Runtime runtime) {
         for (Step step : getSteps()) {
-            runStep(step, reporter, runtime);
+            runStep(scenarioResult, step, reporter, runtime);
         }
     }
 
-    void runStep(Step step, Reporter reporter, Runtime runtime) {
-        runtime.runStep(cucumberFeature.getPath(), step, reporter, cucumberFeature.getI18n());
+    void runStep(ScenarioImpl scenarioResult, Step step, Reporter reporter, Runtime runtime) {
+        runtime.runStep(scenarioResult, cucumberFeature.getPath(), step, reporter, cucumberFeature.getI18n());
     }
 }

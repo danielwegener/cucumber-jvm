@@ -1,6 +1,7 @@
 package cucumber.runtime.model;
 
 import cucumber.runtime.Runtime;
+import cucumber.runtime.ScenarioImpl;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.Reporter;
 import gherkin.formatter.model.Row;
@@ -35,17 +36,17 @@ public class CucumberScenario extends CucumberTagStatement {
     @Override
     public void run(Formatter formatter, Reporter reporter, Runtime runtime) {
         Set<Tag> tags = tagsAndInheritedTags();
-        runtime.buildBackendWorlds(reporter, tags, scenario);
+        final ScenarioImpl scenarioResult = runtime.buildBackendWorlds(reporter, tags, this.scenario);
         formatter.startOfScenarioLifeCycle((Scenario) getGherkinModel());
-        runtime.runBeforeHooks(reporter, tags);
+        runtime.runBeforeHooks(scenarioResult, reporter, tags);
 
-        runBackground(formatter, reporter, runtime);
+        runBackground(scenarioResult, formatter, reporter, runtime);
         format(formatter);
-        runSteps(reporter, runtime);
+        runSteps(scenarioResult, reporter, runtime);
 
-        runtime.runAfterHooks(reporter, tags);
+        runtime.runAfterHooks(scenarioResult, reporter, tags);
         formatter.endOfScenarioLifeCycle((Scenario) getGherkinModel());
-        runtime.disposeBackendWorlds(createScenarioDesignation());
+        runtime.disposeBackendWorlds(scenarioResult, createScenarioDesignation());
     }
 
     private String createScenarioDesignation() {
@@ -53,10 +54,10 @@ public class CucumberScenario extends CucumberTagStatement {
                 scenario.getKeyword() + ": " + scenario.getName();
     }
 
-    private void runBackground(Formatter formatter, Reporter reporter, Runtime runtime) {
+    private void runBackground(ScenarioImpl scenarioResult, Formatter formatter, Reporter reporter, Runtime runtime) {
         if (cucumberBackground != null) {
             cucumberBackground.format(formatter);
-            cucumberBackground.runSteps(reporter, runtime);
+            cucumberBackground.runSteps(scenarioResult, reporter, runtime);
         }
     }
 }

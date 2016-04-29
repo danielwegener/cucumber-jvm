@@ -1,11 +1,8 @@
 package cucumber.runtime.java;
 
 import cucumber.api.java.en.Given;
-import cucumber.runtime.AmbiguousStepDefinitionsException;
-import cucumber.runtime.DuplicateStepDefinitionException;
-import cucumber.runtime.Glue;
+import cucumber.runtime.*;
 import cucumber.runtime.Runtime;
-import cucumber.runtime.RuntimeOptions;
 import cucumber.runtime.io.ClasspathResourceLoader;
 import gherkin.I18n;
 import gherkin.formatter.Reporter;
@@ -70,10 +67,10 @@ public class JavaStepDefinitionTest {
         backend.addStepDefinition(THREE_BLIND_ANIMALS.getAnnotation(Given.class), THREE_BLIND_ANIMALS);
 
         Reporter reporter = mock(Reporter.class);
-        runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), mock(Scenario.class));
+        final ScenarioImpl scenarioResult = runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), mock(Scenario.class));
         Tag tag = new Tag("@foo", 0);
-        runtime.runBeforeHooks(reporter, asSet(tag));
-        runtime.runStep("some.feature", new Step(NO_COMMENTS, "Given ", "three blind mice", 1, null, null), reporter, ENGLISH);
+        runtime.runBeforeHooks(scenarioResult, reporter, asSet(tag));
+        runtime.runStep(scenarioResult, "some.feature", new Step(NO_COMMENTS, "Given ", "three blind mice", 1, null, null), reporter, ENGLISH);
 
         ArgumentCaptor<Result> result = ArgumentCaptor.forClass(Result.class);
         verify(reporter).result(result.capture());
@@ -114,12 +111,12 @@ public class JavaStepDefinitionTest {
             public void write(String text) {
             }
         };
-        runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), mock(Scenario.class));
+        final ScenarioImpl scenarioResult = runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), mock(Scenario.class));
         Tag tag = new Tag("@foo", 0);
         Set<Tag> tags = asSet(tag);
-        runtime.runBeforeHooks(reporter, tags);
+        runtime.runBeforeHooks(scenarioResult, reporter, tags);
         Step step = new Step(NO_COMMENTS, "Given ", "three blind mice", 1, null, null);
-        runtime.runStep("some.feature", step, reporter, ENGLISH);
+        runtime.runStep(scenarioResult, "some.feature", step, reporter, ENGLISH);
         assertTrue(defs.foo);
         assertFalse(defs.bar);
     }

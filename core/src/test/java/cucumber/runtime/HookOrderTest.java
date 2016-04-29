@@ -25,13 +25,14 @@ public class HookOrderTest {
 
     private Runtime runtime;
     private Glue glue;
+    private ScenarioImpl scenarioResult;
 
     @Before
     public void buildMockWorld() {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         RuntimeOptions runtimeOptions = new RuntimeOptions("");
         runtime = new Runtime(mock(ResourceLoader.class), classLoader, asList(mock(Backend.class)), runtimeOptions);
-        runtime.buildBackendWorlds(null, Collections.<Tag>emptySet(), mock(gherkin.formatter.model.Scenario.class));
+        scenarioResult = new ScenarioImpl(null, Collections.<Tag>emptySet(), mock(gherkin.formatter.model.Scenario.class));
         glue = runtime.getGlue();
     }
 
@@ -42,7 +43,7 @@ public class HookOrderTest {
             glue.addBeforeHook(hook);
         }
 
-        runtime.runBeforeHooks(mock(Reporter.class), new HashSet<Tag>());
+        runtime.runBeforeHooks(scenarioResult, mock(Reporter.class), new HashSet<Tag>());
 
         InOrder inOrder = inOrder(hooks.toArray());
         inOrder.verify(hooks.get(6)).execute(Matchers.<Scenario>any());
@@ -61,7 +62,7 @@ public class HookOrderTest {
             glue.addAfterHook(hook);
         }
 
-        runtime.runAfterHooks(mock(Reporter.class), new HashSet<Tag>());
+        runtime.runAfterHooks(scenarioResult, mock(Reporter.class), new HashSet<Tag>());
 
         InOrder inOrder = inOrder(hooks.toArray());
         inOrder.verify(hooks.get(2)).execute(Matchers.<Scenario>any());
@@ -84,7 +85,7 @@ public class HookOrderTest {
             glue.addBeforeHook(hook);
         }
 
-        runtime.runBeforeHooks(mock(Reporter.class), new HashSet<Tag>());
+        runtime.runBeforeHooks(scenarioResult, mock(Reporter.class), new HashSet<Tag>());
 
         List<HookDefinition> allHooks = new ArrayList<HookDefinition>();
         allHooks.addAll(backend1Hooks);

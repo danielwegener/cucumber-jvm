@@ -1,6 +1,7 @@
 package cucumber.runtime;
 
 import cucumber.api.Pending;
+import cucumber.api.Scenario;
 import cucumber.api.StepDefinitionReporter;
 import cucumber.api.SummaryPrinter;
 import cucumber.runtime.io.ResourceLoader;
@@ -15,7 +16,6 @@ import gherkin.formatter.model.DataTableRow;
 import gherkin.formatter.model.DocString;
 import gherkin.formatter.model.Match;
 import gherkin.formatter.model.Result;
-import gherkin.formatter.model.Scenario;
 import gherkin.formatter.model.Step;
 import gherkin.formatter.model.Tag;
 
@@ -61,7 +61,6 @@ public class Runtime implements UnreportedStepExecutor {
     //TODO: These are really state machine variables, and I'm not sure the runtime is the best place for this state machine
     //They really should be created each time a scenario is run, not in here
     private boolean skipNextStep = false;
-    private ScenarioImpl scenarioResult = null;
 
     public Runtime(ResourceLoader resourceLoader, ClassFinder classFinder, ClassLoader classLoader, RuntimeOptions runtimeOptions) {
         this(resourceLoader, classLoader, loadBackends(resourceLoader, classFinder), runtimeOptions);
@@ -138,17 +137,17 @@ public class Runtime implements UnreportedStepExecutor {
         Stats.StatsFormatter.printStats(stats, statsFormatOptions, out, runtimeOptions.isStrict());
     }
 
-    public void buildBackendWorlds(Reporter reporter, Set<Tag> tags, Scenario gherkinScenario) {
+    public ScenarioImpl buildBackendWorlds(Reporter reporter, Set<Tag> tags, gherkin.formatter.model.Scenario gherkinScenario) {
         for (Backend backend : backends) {
             backend.buildWorld();
         }
         undefinedStepsTracker.reset();
         //TODO: this is the initial state of the state machine, it should not go here, but into something else
         skipNextStep = false;
-        scenarioResult = new ScenarioImpl(reporter, tags, gherkinScenario);
+        return new ScenarioImpl(reporter, tags, gherkinScenario);
     }
 
-    public void disposeBackendWorlds(String scenarioDesignation) {
+    public void disposeBackendWorlds(Scenario scenarioResult, String scenarioDesignation) {
         stats.addScenario(scenarioResult.getStatus(), scenarioDesignation);
         for (Backend backend : backends) {
             backend.disposeWorld();
@@ -200,23 +199,23 @@ public class Runtime implements UnreportedStepExecutor {
         return glue;
     }
 
-    public void runBeforeHooks(Reporter reporter, Set<Tag> tags) {
-        runHooks(glue.getBeforeHooks(), reporter, tags, true);
+    public void runBeforeHooks(ScenarioImpl scenarioResult, Reporter reporter, Set<Tag> tags) {
+        runHooks(scenarioResult, glue.getBeforeHooks(), reporter, tags, true, runtimeOptions.isDryRun());
     }
 
-    public void runAfterHooks(Reporter reporter, Set<Tag> tags) {
-        runHooks(glue.getAfterHooks(), reporter, tags, false);
+    public void runAfterHooks(ScenarioImpl scenarioResult, Reporter reporter, Set<Tag> tags) {
+        runHooks(scenarioResult, glue.getAfterHooks(), reporter, tags, false, runtimeOptions.isDryRun());
     }
 
-    private void runHooks(List<HookDefinition> hooks, Reporter reporter, Set<Tag> tags, boolean isBefore) {
-        if (!runtimeOptions.isDryRun()) {
+    private void runHooks(ScenarioImpl scenarioResult, List<HookDefinition> hooks, Reporter reporter, Set<Tag> tags, boolean isBefore, boolean isDryRun) {
+        if (!isDryRun) {
             for (HookDefinition hook : hooks) {
-                runHookIfTagsMatch(hook, reporter, tags, isBefore);
+                runHookIfTagsMatch(scenarioResult, hook, reporter, tags, isBefore);
             }
         }
     }
 
-    private void runHookIfTagsMatch(HookDefinition hook, Reporter reporter, Set<Tag> tags, boolean isBefore) {
+    private void runHookIfTagsMatch(ScenarioImpl scenarioResult, HookDefinition hook, Reporter reporter, Set<Tag> tags, boolean isBefore) {
         if (hook.matches(tags)) {
             String status = Result.PASSED;
             Throwable error = null;
@@ -233,7 +232,8 @@ public class Runtime implements UnreportedStepExecutor {
             } finally {
                 long duration = stopWatch.stop();
                 Result result = new Result(status, duration, error, DUMMY_ARG);
-                addHookToCounterAndResult(result);
+                scenarioResult.add(result);
+                stats.addHookTime(result.getDuration());
                 if (isBefore) {
                     reporter.before(match, result);
                 } else {
@@ -263,7 +263,7 @@ public class Runtime implements UnreportedStepExecutor {
         match.runStep(i18n);
     }
 
-    public void runStep(String featurePath, Step step, Reporter reporter, I18n i18n) {
+    public void runStep(ScenarioImpl scenarioResult, String featurePath, Step step, Reporter reporter, I18n i18n) {
         StepDefinitionMatch match;
 
         try {
@@ -272,28 +272,31 @@ public class Runtime implements UnreportedStepExecutor {
             reporter.match(e.getMatches().get(0));
             Result result = new Result(Result.FAILED, 0L, e, DUMMY_ARG);
             reporter.result(result);
-            addStepToCounterAndResult(result);
+            scenarioResult.add(result);
+            stats.addStep(result);
             addError(e);
             skipNextStep = true;
             return;
         }
 
-        if (match != null) {
-            reporter.match(match);
-        } else {
+        if (match == null) {
             reporter.match(Match.UNDEFINED);
             reporter.result(Result.UNDEFINED);
-            addStepToCounterAndResult(Result.UNDEFINED);
+            scenarioResult.add(Result.UNDEFINED);
+            stats.addStep(Result.UNDEFINED);
             skipNextStep = true;
             return;
         }
+
+        reporter.match(match);
 
         if (runtimeOptions.isDryRun()) {
             skipNextStep = true;
         }
 
         if (skipNextStep) {
-            addStepToCounterAndResult(Result.SKIPPED);
+            scenarioResult.add(Result.SKIPPED);
+            stats.addStep(Result.SKIPPED);
             reporter.result(Result.SKIPPED);
         } else {
             String status = Result.PASSED;
@@ -310,7 +313,8 @@ public class Runtime implements UnreportedStepExecutor {
             } finally {
                 long duration = stopWatch.stop();
                 Result result = new Result(status, duration, error, DUMMY_ARG);
-                addStepToCounterAndResult(result);
+                scenarioResult.add(result);
+                stats.addStep(result);
                 reporter.result(result);
             }
         }
@@ -323,13 +327,4 @@ public class Runtime implements UnreportedStepExecutor {
         return t.getClass().isAnnotationPresent(Pending.class) || Arrays.binarySearch(PENDING_EXCEPTIONS, t.getClass().getName()) >= 0;
     }
 
-    private void addStepToCounterAndResult(Result result) {
-        scenarioResult.add(result);
-        stats.addStep(result);
-    }
-
-    private void addHookToCounterAndResult(Result result) {
-        scenarioResult.add(result);
-        stats.addHookTime(result.getDuration());
-    }
 }
