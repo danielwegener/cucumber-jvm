@@ -56,7 +56,7 @@ public class Runtime implements UnreportedStepExecutor {
     private final Collection<? extends Backend> backends;
     private final ResourceLoader resourceLoader;
     private final ClassLoader classLoader;
-    private final StopWatch stopWatch;
+    private final StopWatch.StopWatchFactory stopWatchFactory;
 
     //TODO: These are really state machine variables, and I'm not sure the runtime is the best place for this state machine
     //They really should be created each time a scenario is run, not in here
@@ -68,16 +68,16 @@ public class Runtime implements UnreportedStepExecutor {
     }
 
     public Runtime(ResourceLoader resourceLoader, ClassLoader classLoader, Collection<? extends Backend> backends, RuntimeOptions runtimeOptions) {
-        this(resourceLoader, classLoader, backends, runtimeOptions, StopWatch.SYSTEM, null);
+        this(resourceLoader, classLoader, backends, runtimeOptions, StopWatch.SIMPLE_FACTORY, null);
     }
 
     public Runtime(ResourceLoader resourceLoader, ClassLoader classLoader, Collection<? extends Backend> backends,
                    RuntimeOptions runtimeOptions, RuntimeGlue optionalGlue) {
-        this(resourceLoader, classLoader, backends, runtimeOptions, StopWatch.SYSTEM, optionalGlue);
+        this(resourceLoader, classLoader, backends, runtimeOptions, StopWatch.SIMPLE_FACTORY, optionalGlue);
     }
 
     public Runtime(ResourceLoader resourceLoader, ClassLoader classLoader, Collection<? extends Backend> backends,
-                   RuntimeOptions runtimeOptions, StopWatch stopWatch, RuntimeGlue optionalGlue) {
+                   RuntimeOptions runtimeOptions, StopWatch.StopWatchFactory stopWatchFactory, RuntimeGlue optionalGlue) {
         if (backends.isEmpty()) {
             throw new CucumberException("No backends were found. Please make sure you have a backend module on your CLASSPATH.");
         }
@@ -85,7 +85,7 @@ public class Runtime implements UnreportedStepExecutor {
         this.classLoader = classLoader;
         this.backends = backends;
         this.runtimeOptions = runtimeOptions;
-        this.stopWatch = stopWatch;
+        this.stopWatchFactory = stopWatchFactory;
         this.glue = optionalGlue != null ? optionalGlue : new RuntimeGlue(undefinedStepsTracker, new LocalizedXStreams(classLoader));
         this.stats = new Stats();
         this.statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
@@ -221,6 +221,7 @@ public class Runtime implements UnreportedStepExecutor {
             String status = Result.PASSED;
             Throwable error = null;
             Match match = new Match(Collections.<Argument>emptyList(), hook.getLocation(false));
+            final StopWatch stopWatch = stopWatchFactory.create();
             stopWatch.start();
             try {
                 hook.execute(scenarioResult);
@@ -297,6 +298,7 @@ public class Runtime implements UnreportedStepExecutor {
         } else {
             String status = Result.PASSED;
             Throwable error = null;
+            final StopWatch stopWatch = stopWatchFactory.create();
             stopWatch.start();
             try {
                 match.runStep(i18n);

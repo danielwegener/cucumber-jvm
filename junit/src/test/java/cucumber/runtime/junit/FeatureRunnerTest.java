@@ -134,7 +134,7 @@ public class FeatureRunnerTest {
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         final ClasspathResourceLoader resourceLoader = new ClasspathResourceLoader(classLoader);
         final RuntimeGlue glue = mock(RuntimeGlue.class);
-        final Runtime runtime = new Runtime(resourceLoader, classLoader, asList(mock(Backend.class)), runtimeOptions, new StopWatch.Stub(0l), glue);
+        final Runtime runtime = new Runtime(resourceLoader, classLoader, asList(mock(Backend.class)), runtimeOptions, StopWatch.Stub.factory(0l), glue);
         FormatterSpy formatterSpy = new FormatterSpy();
         FeatureRunner runner = new FeatureRunner(cucumberFeature, runtime, new JUnitReporter(formatterSpy, formatterSpy, false));
         runner.run(mock(RunNotifier.class));

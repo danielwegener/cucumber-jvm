@@ -4,27 +4,51 @@ public interface StopWatch {
     void start();
 
     /**
-     * @return nanoseconds since start
+     * @return nanoseconds since start. Result is undefined if start() has not been called before.
      */
     long stop();
 
-    StopWatch SYSTEM = new StopWatch() {
-        private final ThreadLocal<Long> start = new ThreadLocal<Long>();
+
+    interface StopWatchFactory {
+        StopWatch create();
+    }
+
+
+    class SimpleStopWatch implements StopWatch {
+        private volatile long start = Long.MAX_VALUE;
 
         @Override
         public void start() {
-            start.set(System.nanoTime());
+            this.start = System.nanoTime();
         }
 
         @Override
         public long stop() {
-            Long duration = System.nanoTime() - start.get();
-            start.set(null);
-            return duration;
+            return  System.nanoTime() - start;
+        }
+    }
+
+
+    StopWatchFactory SIMPLE_FACTORY = new StopWatchFactory() {
+        @Override
+        public StopWatch create() {
+            return new SimpleStopWatch();
         }
     };
 
-    public static class Stub implements StopWatch {
+
+
+    class Stub implements StopWatch {
+
+        public static StopWatchFactory factory(final long duration) {
+            return new StopWatchFactory() {
+                @Override
+                public StopWatch create() {
+                    return new Stub(duration);
+                }
+            };
+        }
+
         private final long duration;
 
         public Stub(long duration) {

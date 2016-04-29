@@ -5,7 +5,7 @@ import static org.junit.Assert.assertNull;
 import org.junit.Test;
 
 public class StopWatchTest {
-    private final StopWatch stopWatch = StopWatch.SYSTEM;
+    private final StopWatch stopWatch = new StopWatch.SimpleStopWatch();
     private Throwable exception;
 
     @Test
