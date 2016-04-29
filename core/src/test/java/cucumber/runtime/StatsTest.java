@@ -20,10 +20,11 @@ public class StatsTest {
 
     @Test
     public void should_print_zero_scenarios_zero_steps_if_nothing_has_executed() {
-        Stats counter = createMonochromeSummaryCounter();
+        Stats counter = new Stats();
+        Stats.StatsFormatOptions formatOptions = createMonochromeUsFormatOptions();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        counter.printStats(new PrintStream(baos), isStrict(false));
+        Stats.StatsFormatter.printStats(counter, formatOptions, new PrintStream(baos), isStrict(false));
 
         assertThat(baos.toString(), startsWith(String.format(
                 "0 Scenarios%n" +
@@ -32,7 +33,9 @@ public class StatsTest {
 
     @Test
     public void should_only_print_sub_counts_if_not_zero() {
-        Stats counter = createMonochromeSummaryCounter();
+        Stats counter = new Stats();
+        Stats.StatsFormatOptions formatOptions = createMonochromeUsFormatOptions();
+
         Result passedResult = createResultWithStatus(Result.PASSED);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -40,7 +43,7 @@ public class StatsTest {
         counter.addStep(passedResult);
         counter.addStep(passedResult);
         counter.addScenario(Result.PASSED);
-        counter.printStats(new PrintStream(baos), isStrict(false));
+        Stats.StatsFormatter.printStats(counter,formatOptions, new PrintStream(baos), isStrict(false));
 
         assertThat(baos.toString(), startsWith(String.format(
                 "1 Scenarios (1 passed)%n" +
@@ -49,7 +52,8 @@ public class StatsTest {
 
     @Test
     public void should_print_sub_counts_in_order_failed_skipped_pending_undefined_passed() {
-        Stats counter = createMonochromeSummaryCounter();
+        Stats counter = new Stats();
+        Stats.StatsFormatOptions formatOptions = createMonochromeUsFormatOptions();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         addOneStepScenario(counter, Result.PASSED);
@@ -57,7 +61,7 @@ public class StatsTest {
         addOneStepScenario(counter, Stats.PENDING);
         addOneStepScenario(counter, Result.UNDEFINED.getStatus());
         addOneStepScenario(counter, Result.SKIPPED.getStatus());
-        counter.printStats(new PrintStream(baos), isStrict(false));
+        Stats.StatsFormatter.printStats(counter, formatOptions, new PrintStream(baos), isStrict(false));
 
         assertThat(baos.toString(), containsString(String.format("" +
                 "5 Scenarios (1 failed, 1 skipped, 1 pending, 1 undefined, 1 passed)%n" +
@@ -66,7 +70,8 @@ public class StatsTest {
 
     @Test
     public void should_print_sub_counts_in_order_failed_skipped_undefined_passed_in_color() {
-        Stats counter = createColorSummaryCounter();
+        Stats counter = new Stats();
+        Stats.StatsFormatOptions formatOptions = createColorSummaryStatsFormatOptions();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         addOneStepScenario(counter, Result.PASSED);
@@ -74,7 +79,7 @@ public class StatsTest {
         addOneStepScenario(counter, Stats.PENDING);
         addOneStepScenario(counter, Result.UNDEFINED.getStatus());
         addOneStepScenario(counter, Result.SKIPPED.getStatus());
-        counter.printStats(new PrintStream(baos), isStrict(false));
+        Stats.StatsFormatter.printStats(counter, formatOptions, new PrintStream(baos), isStrict(false));
 
         String colorSubCounts =
                 AnsiEscapes.RED + "1 failed" + AnsiEscapes.RESET + ", " +
@@ -89,10 +94,11 @@ public class StatsTest {
 
     @Test
     public void should_print_zero_m_zero_s_if_nothing_has_executed() {
-        Stats counter = createMonochromeSummaryCounter();
+        Stats counter = new Stats();
+        Stats.StatsFormatOptions formatOptions = createMonochromeUsFormatOptions();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        counter.printStats(new PrintStream(baos), isStrict(false));
+        Stats.StatsFormatter.printStats(counter, formatOptions, new PrintStream(baos), isStrict(false));
 
         assertThat(baos.toString(), endsWith(String.format(
                 "0m0.000s%n")));
@@ -100,14 +106,15 @@ public class StatsTest {
 
     @Test
     public void should_include_hook_time_and_step_time_has_executed() {
-        Stats counter = createMonochromeSummaryCounter();
+        Stats counter = new Stats();
+        Stats.StatsFormatOptions formatOptions = createMonochromeUsFormatOptions();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         counter.addHookTime(ONE_MILLI_SECOND);
         counter.addStep(new Result(Result.PASSED, ONE_MILLI_SECOND, null));
         counter.addStep(new Result(Result.PASSED, ONE_MILLI_SECOND, null));
         counter.addHookTime(ONE_MILLI_SECOND);
-        counter.printStats(new PrintStream(baos), isStrict(false));
+        Stats.StatsFormatter.printStats(counter, formatOptions, new PrintStream(baos), isStrict(false));
 
         assertThat(baos.toString(), endsWith(String.format(
                 "0m0.004s%n")));
@@ -115,13 +122,14 @@ public class StatsTest {
 
     @Test
     public void should_print_minutes_seconds_and_milliseconds() {
-        Stats counter = createMonochromeSummaryCounter();
+        Stats counter = new Stats();
+        Stats.StatsFormatOptions formatOptions = createMonochromeUsFormatOptions();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         counter.addStep(new Result(Result.PASSED, Stats.ONE_MINUTE, null));
         counter.addStep(new Result(Result.PASSED, Stats.ONE_SECOND, null));
         counter.addStep(new Result(Result.PASSED, ONE_MILLI_SECOND, null));
-        counter.printStats(new PrintStream(baos), isStrict(false));
+        Stats.StatsFormatter.printStats(counter, formatOptions, new PrintStream(baos), isStrict(false));
 
         assertThat(baos.toString(), endsWith(String.format(
                 "1m1.001s%n")));
@@ -129,12 +137,13 @@ public class StatsTest {
 
     @Test
     public void should_print_minutes_instead_of_hours() {
-        Stats counter = createMonochromeSummaryCounter();
+        Stats counter = new Stats();
+        Stats.StatsFormatOptions formatOptions = createMonochromeUsFormatOptions();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         counter.addStep(new Result(Result.PASSED, ONE_HOUR, null));
         counter.addStep(new Result(Result.PASSED, Stats.ONE_MINUTE, null));
-        counter.printStats(new PrintStream(baos), isStrict(false));
+        Stats.StatsFormatter.printStats(counter, formatOptions, new PrintStream(baos), isStrict(false));
 
         assertThat(baos.toString(), endsWith(String.format(
                 "61m0.000s%n")));
@@ -142,13 +151,14 @@ public class StatsTest {
 
     @Test
     public void should_use_locale_for_decimal_separator() {
-        Stats counter = new Stats(true, Locale.GERMANY);
+        Stats counter = new Stats();
+        Stats.StatsFormatOptions formatOptions = new Stats.StatsFormatOptions(true, Locale.GERMANY);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         counter.addStep(new Result(Result.PASSED, Stats.ONE_MINUTE, null));
         counter.addStep(new Result(Result.PASSED, Stats.ONE_SECOND, null));
         counter.addStep(new Result(Result.PASSED, ONE_MILLI_SECOND, null));
-        counter.printStats(new PrintStream(baos), isStrict(false));
+        Stats.StatsFormatter.printStats(counter, formatOptions, new PrintStream(baos), isStrict(false));
 
         assertThat(baos.toString(), endsWith(String.format(
                 "1m1,001s%n")));
@@ -156,7 +166,8 @@ public class StatsTest {
 
     @Test
     public void should_print_failed_scenarios() {
-        Stats counter = createMonochromeSummaryCounter();
+        Stats counter = new Stats();
+        Stats.StatsFormatOptions formatOptions = createMonochromeUsFormatOptions();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         counter.addStep(createResultWithStatus(Result.FAILED));
@@ -165,7 +176,7 @@ public class StatsTest {
         counter.addScenario(Result.UNDEFINED.getStatus(), "path/file.feature:3 # Scenario: scenario_name");
         counter.addStep(createResultWithStatus(Stats.PENDING));
         counter.addScenario(Stats.PENDING, "path/file.feature:3 # Scenario: scenario_name");
-        counter.printStats(new PrintStream(baos), isStrict(false));
+        Stats.StatsFormatter.printStats(counter, formatOptions, new PrintStream(baos), isStrict(false));
 
         assertThat(baos.toString(), startsWith(String.format("" +
                 "Failed scenarios:%n" +
@@ -176,7 +187,8 @@ public class StatsTest {
 
     @Test
     public void should_print_failed_pending_undefined_scenarios_if_strict() {
-        Stats counter = createMonochromeSummaryCounter();
+        Stats counter = new Stats();
+        Stats.StatsFormatOptions formatOptions = createMonochromeUsFormatOptions();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         counter.addStep(createResultWithStatus(Result.FAILED));
@@ -185,7 +197,7 @@ public class StatsTest {
         counter.addScenario(Result.UNDEFINED.getStatus(), "path/file.feature:3 # Scenario: scenario_name");
         counter.addStep(createResultWithStatus(Stats.PENDING));
         counter.addScenario(Stats.PENDING, "path/file.feature:3 # Scenario: scenario_name");
-        counter.printStats(new PrintStream(baos), isStrict(true));
+        Stats.StatsFormatter.printStats(counter, formatOptions, new PrintStream(baos), isStrict(true));
 
         assertThat(baos.toString(), startsWith(String.format("" +
                 "Failed scenarios:%n" +
@@ -209,12 +221,13 @@ public class StatsTest {
         return new Result(status, 0l, null);
     }
 
-    private Stats createMonochromeSummaryCounter() {
-        return new Stats(true, Locale.US);
+    private Stats.StatsFormatOptions createMonochromeUsFormatOptions() {
+        return new Stats.StatsFormatOptions(true, Locale.US);
     }
 
-    private Stats createColorSummaryCounter() {
-        return new Stats(false, Locale.US);
+
+    private Stats.StatsFormatOptions createColorSummaryStatsFormatOptions() {
+        return new Stats.StatsFormatOptions(false, Locale.US);
     }
 
     private boolean isStrict(boolean isStrict) {

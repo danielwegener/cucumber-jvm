@@ -46,6 +46,7 @@ public class Runtime implements UnreportedStepExecutor {
     private static final byte ERRORS = 0x1;
 
     private final Stats stats;
+    private final Stats.StatsFormatOptions statsFormatOptions;
     final UndefinedStepsTracker undefinedStepsTracker = new UndefinedStepsTracker();
 
     private final Glue glue;
@@ -86,7 +87,8 @@ public class Runtime implements UnreportedStepExecutor {
         this.runtimeOptions = runtimeOptions;
         this.stopWatch = stopWatch;
         this.glue = optionalGlue != null ? optionalGlue : new RuntimeGlue(undefinedStepsTracker, new LocalizedXStreams(classLoader));
-        this.stats = new Stats(runtimeOptions.isMonochrome());
+        this.stats = new Stats();
+        this.statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
 
         for (Backend backend : backends) {
             backend.loadGlue(glue, runtimeOptions.getGlue());
@@ -133,7 +135,7 @@ public class Runtime implements UnreportedStepExecutor {
     }
 
     void printStats(PrintStream out) {
-        stats.printStats(out, runtimeOptions.isStrict());
+        Stats.StatsFormatter.printStats(stats, statsFormatOptions, out, runtimeOptions.isStrict());
     }
 
     public void buildBackendWorlds(Reporter reporter, Set<Tag> tags, Scenario gherkinScenario) {
