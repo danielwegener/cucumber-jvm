@@ -2,7 +2,6 @@ package cucumber.runtime.model;
 
 import cucumber.runtime.FeatureBuilder;
 import cucumber.runtime.Runtime;
-import cucumber.runtime.Stats;
 import cucumber.runtime.UndefinedStepsTracker;
 import cucumber.runtime.io.MultiLoader;
 import cucumber.runtime.io.Resource;
@@ -158,18 +157,18 @@ public class CucumberFeature {
         return path;
     }
 
-    public Stats run(Formatter formatter, Reporter reporter, Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker) {
+    public RunResult run(Formatter formatter, Reporter reporter, Runtime runtime, UndefinedStepsTracker tracker) {
         formatter.uri(getPath());
         formatter.feature(getGherkinFeature());
-        Stats stats = Stats.IDENTITY;
+        RunResult result = RunResult.IDENTITY;
 
         for (CucumberTagStatement cucumberTagStatement : getFeatureElements()) {
             //Run the scenario, it should handle before and after hooks
-            final Stats featureStats = cucumberTagStatement.run(formatter, reporter, runtime, errors, tracker);
-            stats = Stats.append(stats, featureStats);
+            final RunResult runResult = cucumberTagStatement.run(formatter, reporter, runtime, tracker);
+            result = RunResult.append(result, runResult);
         }
         formatter.eof();
-        return stats;
+        return result;
     }
 
     private static class CucumberFeatureUriComparator implements Comparator<CucumberFeature> {

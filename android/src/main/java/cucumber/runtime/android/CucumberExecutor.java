@@ -12,6 +12,7 @@ import cucumber.runtime.java.JavaBackend;
 import cucumber.api.java.ObjectFactory;
 import cucumber.runtime.java.ObjectFactoryLoader;
 import cucumber.runtime.model.CucumberFeature;
+import cucumber.runtime.model.RunResult;
 import dalvik.system.DexFile;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.Reporter;
@@ -101,17 +102,17 @@ public class CucumberExecutor {
 
         final Reporter reporter = runtimeOptions.reporter(classLoader);
         final Formatter formatter = runtimeOptions.formatter(classLoader);
-        final List<Throwable> errors = new ArrayList<Throwable>();
+        RunResult runResult = RunResult.IDENTITY;
 
         final StepDefinitionReporter stepDefinitionReporter = runtimeOptions.stepDefinitionReporter(classLoader);
         runtime.getGlue().reportStepDefinitions(stepDefinitionReporter);
 
         for (final CucumberFeature cucumberFeature : cucumberFeatures) {
-            cucumberFeature.run(formatter, reporter, runtime, errors, tracker);
+            runResult = RunResult.append(runResult, cucumberFeature.run(formatter, reporter, runtime, tracker));
         }
 
         if (formatter instanceof AndroidLogcatReporter) {
-            ((AndroidLogcatReporter)formatter).setErrorsBeforeDone(errors);
+            ((AndroidLogcatReporter)formatter).setErrorsBeforeDone(runResult.errors);
         }
         formatter.done();
         formatter.close();

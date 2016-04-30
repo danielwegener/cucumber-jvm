@@ -2,7 +2,6 @@ package cucumber.runtime.model;
 
 import cucumber.runtime.CucumberException;
 import cucumber.runtime.Runtime;
-import cucumber.runtime.Stats;
 import cucumber.runtime.UndefinedStepsTracker;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.Reporter;
@@ -39,18 +38,18 @@ public class CucumberScenarioOutline extends CucumberTagStatement {
     }
 
     @Override
-    public Stats run(Formatter formatter, Reporter reporter, Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker) {
-        Stats stats = Stats.IDENTITY;
+    public RunResult run(Formatter formatter, Reporter reporter, Runtime runtime, UndefinedStepsTracker tracker) {
+        RunResult runResult = RunResult.IDENTITY;
         formatOutlineScenario(formatter);
         for (CucumberExamples cucumberExamples : cucumberExamplesList) {
             cucumberExamples.format(formatter);
             List<CucumberScenario> exampleScenarios = cucumberExamples.createExampleScenarios();
             for (CucumberScenario exampleScenario : exampleScenarios) {
-                final Stats exampleScenarioRunResult = exampleScenario.run(formatter, reporter, runtime, errors, tracker);
-                stats = Stats.append(stats, exampleScenarioRunResult);
+                final RunResult exampleScenarioRunResult = exampleScenario.run(formatter, reporter, runtime, tracker);
+                runResult = RunResult.append(runResult, exampleScenarioRunResult);
             }
         }
-        return stats;
+        return runResult;
     }
 
     public void formatOutlineScenario(Formatter formatter) {

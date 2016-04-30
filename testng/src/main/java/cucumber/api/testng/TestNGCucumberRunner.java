@@ -7,6 +7,7 @@ import cucumber.runtime.io.MultiLoader;
 import cucumber.runtime.io.ResourceLoader;
 import cucumber.runtime.io.ResourceLoaderClassFinder;
 import cucumber.runtime.model.CucumberFeature;
+import cucumber.runtime.model.RunResult;
 import gherkin.formatter.Formatter;
 
 import java.util.ArrayList;
@@ -23,7 +24,7 @@ public class TestNGCucumberRunner {
     private ResourceLoader resourceLoader;
     private FeatureResultListener resultListener;
     private ClassLoader classLoader;
-    private Stats stats = Stats.IDENTITY;
+    private RunResult runResult = RunResult.IDENTITY;
 
     /**
      * Bootstrap the cucumber runtime
@@ -48,13 +49,12 @@ public class TestNGCucumberRunner {
      */
     public void runCukes() {
         for (CucumberFeature cucumberFeature : getFeatures()) {
-            final Stats runResult = cucumberFeature.run(
+            final RunResult runResult = cucumberFeature.run(
                     runtimeOptions.formatter(classLoader),
                     resultListener,
                     runtime,
-                    errors,
                     tracker);
-            this.stats = Stats.append(this.stats, runResult);
+            this.runResult = RunResult.append(this.runResult, runResult);
         }
         finish();
         if (!resultListener.isPassed()) {
@@ -64,13 +64,12 @@ public class TestNGCucumberRunner {
 
     public void runCucumber(CucumberFeature cucumberFeature) {
         resultListener.startFeature();
-        final Stats runResult = cucumberFeature.run(
+        final RunResult runResult = cucumberFeature.run(
                 runtimeOptions.formatter(classLoader),
                 resultListener,
                 runtime,
-                errors,
                 tracker);
-        this.stats = Stats.append(this.stats, runResult);
+        this.runResult = RunResult.append(this.runResult, runResult);
 
         if (!resultListener.isPassed()) {
             throw new CucumberException(resultListener.getFirstError());
@@ -84,7 +83,7 @@ public class TestNGCucumberRunner {
 
         formatter.done();
         formatter.close();
-        summaryPrinter.print(statsFormatOptions, stats, errors, runtime.getSnippets(tracker, runtimeOptions.getSnippetType().getFunctionNameGenerator()), runtimeOptions.isStrict());
+        summaryPrinter.print(statsFormatOptions, runResult.stats, errors, runtime.getSnippets(tracker, runtimeOptions.getSnippetType().getFunctionNameGenerator()), runtimeOptions.isStrict());
     }
 
     /**

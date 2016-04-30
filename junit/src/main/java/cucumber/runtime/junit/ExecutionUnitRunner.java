@@ -1,9 +1,9 @@
 package cucumber.runtime.junit;
 
 import cucumber.runtime.Runtime;
-import cucumber.runtime.Stats;
 import cucumber.runtime.UndefinedStepsTracker;
 import cucumber.runtime.model.CucumberScenario;
+import cucumber.runtime.model.RunResult;
 import gherkin.formatter.model.Step;
 import org.junit.runner.Description;
 import org.junit.runner.notification.RunNotifier;
@@ -20,8 +20,7 @@ import java.util.Map;
  */
 public class ExecutionUnitRunner extends ParentRunner<Step> {
     private final Runtime runtime;
-    private Stats stats = Stats.IDENTITY;
-    private final List<Throwable> errors;
+    private RunResult runResult = RunResult.IDENTITY;
     private final UndefinedStepsTracker tracker;
     private final CucumberScenario cucumberScenario;
     private final JUnitReporter jUnitReporter;
@@ -29,10 +28,9 @@ public class ExecutionUnitRunner extends ParentRunner<Step> {
     private final Map<Step, Description> stepDescriptions = new HashMap<Step, Description>();
     private final List<Step> runnerSteps = new ArrayList<Step>();
 
-    public ExecutionUnitRunner(Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker, CucumberScenario cucumberScenario, JUnitReporter jUnitReporter) throws InitializationError {
+    public ExecutionUnitRunner(Runtime runtime, UndefinedStepsTracker tracker, CucumberScenario cucumberScenario, JUnitReporter jUnitReporter) throws InitializationError {
         super(ExecutionUnitRunner.class);
         this.runtime = runtime;
-        this.errors = errors;
         this.cucumberScenario = cucumberScenario;
         this.jUnitReporter = jUnitReporter;
         this.tracker = tracker;
@@ -42,8 +40,8 @@ public class ExecutionUnitRunner extends ParentRunner<Step> {
     	return runnerSteps;
     }
 
-    public Stats getStats() {
-        return stats;
+    public RunResult getRunResult() {
+        return runResult;
     }
 
     @Override
@@ -99,8 +97,8 @@ public class ExecutionUnitRunner extends ParentRunner<Step> {
     public void run(final RunNotifier notifier) {
         jUnitReporter.startExecutionUnit(this, notifier);
         // This causes runChild to never be called, which seems OK.
-        final Stats runResult = cucumberScenario.run(jUnitReporter, jUnitReporter, runtime, errors, tracker);
-        this.stats = Stats.append(this.stats, runResult);
+        final RunResult runResult = cucumberScenario.run(jUnitReporter, jUnitReporter, runtime, tracker);
+        this.runResult = RunResult.append(this.runResult, runResult);
         jUnitReporter.finishExecutionUnit();
     }
 

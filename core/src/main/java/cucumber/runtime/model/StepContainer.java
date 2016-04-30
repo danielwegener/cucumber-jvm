@@ -2,7 +2,6 @@ package cucumber.runtime.model;
 
 import cucumber.runtime.Runtime;
 import cucumber.runtime.ScenarioImpl;
-import cucumber.runtime.Stats;
 import cucumber.runtime.UndefinedStepsTracker;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.Reporter;
@@ -37,20 +36,20 @@ public class StepContainer {
         }
     }
 
-    Runtime.RunStepResult runSteps(ScenarioImpl scenarioResult, List<Throwable> errors, UndefinedStepsTracker tracker,  Reporter reporter, Runtime runtime, boolean skip) {
+    Runtime.RunStepResult runSteps(ScenarioImpl scenarioResult, UndefinedStepsTracker tracker,  Reporter reporter, Runtime runtime, boolean skip) {
         boolean skipNext = skip;
-        Stats accumulatedStats = Stats.IDENTITY;
+        RunResult accumulatedRunResult = RunResult.IDENTITY;
         for (Step step : getSteps()) {
-            final Runtime.RunStepResult runStepResult = runStep(scenarioResult, errors, tracker, step, reporter, runtime, skipNext);
-            accumulatedStats = Stats.append(accumulatedStats, runStepResult.stats);
+            final Runtime.RunStepResult runStepResult = runStep(scenarioResult, tracker, step, reporter, runtime, skipNext);
+            accumulatedRunResult = RunResult.append(accumulatedRunResult, runStepResult.runResult);
             if (runStepResult.skipNext) {
                 skipNext = true;
             }
         }
-        return new Runtime.RunStepResult(skipNext, accumulatedStats);
+        return new Runtime.RunStepResult(skipNext, accumulatedRunResult);
     }
 
-    Runtime.RunStepResult runStep(ScenarioImpl scenarioResult, List<Throwable> errors, UndefinedStepsTracker tracker, Step step, Reporter reporter, Runtime runtime, boolean skip) {
-        return runtime.runStep(scenarioResult, errors, tracker, cucumberFeature.getPath(), step, reporter, cucumberFeature.getI18n(), skip);
+    Runtime.RunStepResult runStep(ScenarioImpl scenarioResult, UndefinedStepsTracker tracker, Step step, Reporter reporter, Runtime runtime, boolean skip) {
+        return runtime.runStep(scenarioResult, tracker, cucumberFeature.getPath(), step, reporter, cucumberFeature.getI18n(), skip);
     }
 }

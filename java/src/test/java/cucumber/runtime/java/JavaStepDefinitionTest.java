@@ -68,9 +68,9 @@ public class JavaStepDefinitionTest {
         Reporter reporter = mock(Reporter.class);
         final ScenarioImpl scenarioResult = runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), mock(Scenario.class));
         Tag tag = new Tag("@foo", 0);
-        Runtime.RunStepResult beforHooksResult = runtime.runBeforeHooks(scenarioResult, errors, reporter, asSet(tag));
+        Runtime.RunStepResult beforHooksResult = runtime.runBeforeHooks(scenarioResult, reporter, asSet(tag));
         boolean skipNext = beforHooksResult.skipNext;
-        runtime.runStep(scenarioResult, errors, tracker, "some.feature", new Step(NO_COMMENTS, "Given ", "three blind mice", 1, null, null), reporter, ENGLISH, skipNext);
+        runtime.runStep(scenarioResult, tracker, "some.feature", new Step(NO_COMMENTS, "Given ", "three blind mice", 1, null, null), reporter, ENGLISH, skipNext);
 
         ArgumentCaptor<Result> result = ArgumentCaptor.forClass(Result.class);
         verify(reporter).result(result.capture());
@@ -114,10 +114,10 @@ public class JavaStepDefinitionTest {
         final ScenarioImpl scenarioResult = runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), mock(Scenario.class));
         Tag tag = new Tag("@foo", 0);
         Set<Tag> tags = asSet(tag);
-        final Runtime.RunStepResult runBeforeHooksResult = runtime.runBeforeHooks(scenarioResult, errors, reporter, tags);
+        final Runtime.RunStepResult runBeforeHooksResult = runtime.runBeforeHooks(scenarioResult, reporter, tags);
         final boolean skipNext = runBeforeHooksResult.skipNext;
         Step step = new Step(NO_COMMENTS, "Given ", "three blind mice", 1, null, null);
-        runtime.runStep(scenarioResult, errors, tracker, "some.feature", step, reporter, ENGLISH, skipNext);
+        runtime.runStep(scenarioResult, tracker, "some.feature", step, reporter, ENGLISH, skipNext);
         assertTrue(defs.foo);
         assertFalse(defs.bar);
     }

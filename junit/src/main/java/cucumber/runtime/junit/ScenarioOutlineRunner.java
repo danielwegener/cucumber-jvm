@@ -1,10 +1,10 @@
 package cucumber.runtime.junit;
 
 import cucumber.runtime.Runtime;
-import cucumber.runtime.Stats;
 import cucumber.runtime.UndefinedStepsTracker;
 import cucumber.runtime.model.CucumberExamples;
 import cucumber.runtime.model.CucumberScenarioOutline;
+import cucumber.runtime.model.RunResult;
 import org.junit.runner.Description;
 import org.junit.runner.Runner;
 import org.junit.runner.notification.RunNotifier;
@@ -18,24 +18,24 @@ public class ScenarioOutlineRunner extends Suite {
     private final CucumberScenarioOutline cucumberScenarioOutline;
     private final JUnitReporter jUnitReporter;
     private Description description;
-    private Stats stats = Stats.IDENTITY;
+    private RunResult runResult = RunResult.IDENTITY;
 
-    public ScenarioOutlineRunner(Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
-        super(null, buildRunners(runtime, errors, tracker, cucumberScenarioOutline, jUnitReporter));
+    public ScenarioOutlineRunner(Runtime runtime, UndefinedStepsTracker tracker, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
+        super(null, buildRunners(runtime, tracker, cucumberScenarioOutline, jUnitReporter));
         this.cucumberScenarioOutline = cucumberScenarioOutline;
         this.jUnitReporter = jUnitReporter;
     }
 
-    private static List<Runner> buildRunners(Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
+    private static List<Runner> buildRunners(Runtime runtime, UndefinedStepsTracker tracker, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
         List<Runner> runners = new ArrayList<Runner>();
         for (CucumberExamples cucumberExamples : cucumberScenarioOutline.getCucumberExamplesList()) {
-            runners.add(new ExamplesRunner(runtime, errors, tracker, cucumberExamples, jUnitReporter));
+            runners.add(new ExamplesRunner(runtime, tracker, cucumberExamples, jUnitReporter));
         }
         return runners;
     }
 
-    public Stats getStats() {
-        return stats;
+    public RunResult getRunResult() {
+        return runResult;
     }
 
     @Override
@@ -60,7 +60,7 @@ public class ScenarioOutlineRunner extends Suite {
         super.run(notifier);
         for (Runner runner : getChildren()) {
             if (runner instanceof ExamplesRunner) {
-                stats = stats.append(stats, ((ExamplesRunner)runner).getStats());
+                runResult = RunResult.append(runResult, ((ExamplesRunner)runner).getStats());
             }
         }
 

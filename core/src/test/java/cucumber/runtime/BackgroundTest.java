@@ -2,14 +2,11 @@ package cucumber.runtime;
 
 import cucumber.runtime.io.ClasspathResourceLoader;
 import cucumber.runtime.model.CucumberFeature;
-import cucumber.runtime.snippets.FunctionNameGenerator;
 import gherkin.formatter.PrettyFormatter;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 import static cucumber.runtime.TestHelper.feature;
 import static java.util.Arrays.asList;
@@ -22,7 +19,6 @@ public class BackgroundTest {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader, false,
                 Collections.<String>emptyList(),  asList(mock(Backend.class)));
-        List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
         CucumberFeature feature = feature("test.feature", "" +
                 "Feature:\n" +
@@ -33,7 +29,7 @@ public class BackgroundTest {
 
         StringBuilder out = new StringBuilder();
         PrettyFormatter pretty = new PrettyFormatter(out, true, true);
-        feature.run(pretty, pretty, runtime, errors, tracker);
+        feature.run(pretty, pretty, runtime, tracker);
         String expectedOutput = "" +
                 "Feature: \n" +
                 "\n" +

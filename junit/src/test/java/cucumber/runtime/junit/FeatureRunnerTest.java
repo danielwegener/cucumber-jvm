@@ -137,11 +137,9 @@ public class FeatureRunnerTest {
         final Runtime runtime = new Runtime(resourceLoader, classLoader, runtimeOptions.isDryRun(),
                 runtimeOptions.getGlue(),
                 asList(mock(Backend.class)), StopWatch.Stub.factory(0l), glue);
-        final Stats stats = new Stats();
-        final List<Throwable> errros = new ArrayList<Throwable>();
         final UndefinedStepsTracker tracker = new UndefinedStepsTracker();
         FormatterSpy formatterSpy = new FormatterSpy();
-        FeatureRunner runner = new FeatureRunner(cucumberFeature, runtime, errros, tracker, new JUnitReporter(formatterSpy, formatterSpy, false));
+        FeatureRunner runner = new FeatureRunner(cucumberFeature, runtime, tracker, new JUnitReporter(formatterSpy, formatterSpy, false));
         runner.run(mock(RunNotifier.class));
         return formatterSpy.toString();
     }

@@ -1,7 +1,6 @@
 package cucumber.runtime.model;
 
 import cucumber.runtime.Runtime;
-import cucumber.runtime.Stats;
 import cucumber.runtime.UndefinedStepsTracker;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.Reporter;
@@ -10,7 +9,6 @@ import gherkin.formatter.model.Tag;
 import gherkin.formatter.model.TagStatement;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import static gherkin.util.FixJava.join;
@@ -46,5 +44,6 @@ public abstract class CucumberTagStatement extends StepContainer {
         return gherkinModel;
     }
 
-    public abstract Stats run(Formatter formatter, Reporter reporter, Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker);
+    public abstract RunResult run(Formatter formatter, Reporter reporter, Runtime runtime, UndefinedStepsTracker tracker);
+
 }

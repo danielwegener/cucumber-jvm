@@ -9,6 +9,7 @@ import cucumber.runtime.io.ClasspathResourceLoader;
 import cucumber.runtime.io.Resource;
 import cucumber.runtime.io.ResourceLoader;
 import cucumber.runtime.model.CucumberFeature;
+import cucumber.runtime.model.RunResult;
 import gherkin.I18n;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.JSONFormatter;
@@ -66,9 +67,8 @@ public class RuntimeTest {
         Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader,
                 runtimeOptions.isDryRun(),
                 runtimeOptions.getGlue(), backends);
-        List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
-        feature.run(jsonFormatter, jsonFormatter, runtime, errors, tracker);
+        feature.run(jsonFormatter, jsonFormatter, runtime, tracker);
         jsonFormatter.done();
         String expected = "" +
                 "[\n" +
@@ -256,10 +256,9 @@ public class RuntimeTest {
 
         RuntimeOptions runtimeOptions = createRuntimeOptions("--monochrome");
         Runtime runtime = createRuntimeWithMockedGlue(match, runtimeOptions);
-        List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
-        Stats stats = runScenario(reporter, runtime, errors, tracker, stepCount(1));
-        Stats.StatsFormatter.printStats(stats, new Stats.StatsFormatOptions(true), new PrintStream(baos), false);
+        RunResult runResult = runScenario(reporter, runtime, tracker, stepCount(1));
+        Stats.StatsFormatter.printStats(runResult.stats, new Stats.StatsFormatOptions(true), new PrintStream(baos), false);
 
         assertThat(baos.toString(), startsWith(String.format(
                 "1 Scenarios (1 passed)%n" +
@@ -275,10 +274,9 @@ public class RuntimeTest {
         RuntimeOptions runtimeOptions = createRuntimeOptions("--monochrome");
         Runtime runtime = createRuntimeWithMockedGlue(match, runtimeOptions);
         Stats.StatsFormatOptions statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
-        List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
-        Stats stats = runScenario(reporter, runtime, errors, tracker, stepCount(1));
-        Stats.StatsFormatter.printStats(stats, statsFormatOptions, new PrintStream(baos), false);
+        RunResult runResult = runScenario(reporter, runtime, tracker, stepCount(1));
+        Stats.StatsFormatter.printStats(runResult.stats, statsFormatOptions, new PrintStream(baos), false);
 
         assertThat(baos.toString(), containsString(String.format("" +
                 "1 Scenarios (1 pending)%n" +
@@ -294,10 +292,9 @@ public class RuntimeTest {
         RuntimeOptions runtimeOptions = createRuntimeOptions("--monochrome");
         Runtime runtime = createRuntimeWithMockedGlue(match, runtimeOptions);
         Stats.StatsFormatOptions statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
-        List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
-        Stats stats = runScenario(reporter, runtime, errors, tracker, stepCount(1));
-        Stats.StatsFormatter.printStats(stats, statsFormatOptions, new PrintStream(baos), false);
+        RunResult runResult = runScenario(reporter, runtime, tracker, stepCount(1));
+        Stats.StatsFormatter.printStats(runResult.stats, statsFormatOptions, new PrintStream(baos), false);
 
         assertThat(baos.toString(), containsString(String.format("" +
                 "1 Scenarios (1 failed)%n" +
@@ -312,10 +309,9 @@ public class RuntimeTest {
         RuntimeOptions runtimeOptions = createRuntimeOptions("--monochrome");
         Runtime runtime = createRuntimeWithMockedGlueWithAmbiguousMatch(runtimeOptions);
         Stats.StatsFormatOptions statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
-        List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
-        Stats stats = runScenario(reporter, runtime, errors, tracker, stepCount(1));
-        Stats.StatsFormatter.printStats(stats, statsFormatOptions, new PrintStream(baos), false);
+        RunResult runResult = runScenario(reporter, runtime, tracker, stepCount(1));
+        Stats.StatsFormatter.printStats(runResult.stats, statsFormatOptions, new PrintStream(baos), false);
 
         assertThat(baos.toString(), containsString(String.format(""+
                 "1 Scenarios (1 failed)%n" +
@@ -331,10 +327,9 @@ public class RuntimeTest {
         RuntimeOptions runtimeOptions = createRuntimeOptions("--monochrome");
         Runtime runtime = createRuntimeWithMockedGlue(match, runtimeOptions);
         Stats.StatsFormatOptions statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
-        List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
-        Stats stats = runScenario(reporter, runtime, errors, tracker, stepCount(2));
-        Stats.StatsFormatter.printStats(stats, statsFormatOptions, new PrintStream(baos), false);
+        RunResult runResult = runScenario(reporter, runtime, tracker, stepCount(2));
+        Stats.StatsFormatter.printStats(runResult.stats, statsFormatOptions, new PrintStream(baos), false);
 
         assertThat(baos.toString(), containsString(String.format("" +
                 "1 Scenarios (1 failed)%n" +
@@ -349,10 +344,9 @@ public class RuntimeTest {
         RuntimeOptions runtimeOptions = createRuntimeOptions("--monochrome");
         Runtime runtime = createRuntimeWithMockedGlue(null, runtimeOptions);
         Stats.StatsFormatOptions statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
-        List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
-        Stats stats = runScenario(reporter, runtime, errors, tracker, stepCount(1));
-        Stats.StatsFormatter.printStats(stats, statsFormatOptions, new PrintStream(baos), false);
+        RunResult runResult = runScenario(reporter, runtime, tracker, stepCount(1));
+        Stats.StatsFormatter.printStats(runResult.stats, statsFormatOptions, new PrintStream(baos), false);
 
         assertThat(baos.toString(), containsString(String.format("" +
                 "1 Scenarios (1 undefined)%n" +
@@ -369,10 +363,9 @@ public class RuntimeTest {
         RuntimeOptions runtimeOptions = createRuntimeOptions("--monochrome");
         Runtime runtime = createRuntimeWithMockedGlue(match, hook, true, runtimeOptions);
         Stats.StatsFormatOptions statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
-        List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
-        Stats stats = runScenario(reporter, runtime, errors, tracker, stepCount(1));
-        Stats.StatsFormatter.printStats(stats, statsFormatOptions, new PrintStream(baos), false);
+        RunResult runResult = runScenario(reporter, runtime, tracker, stepCount(1));
+        Stats.StatsFormatter.printStats(runResult.stats, statsFormatOptions, new PrintStream(baos), false);
 
         assertThat(baos.toString(), containsString(String.format("" +
                 "1 Scenarios (1 failed)%n" +
@@ -389,10 +382,9 @@ public class RuntimeTest {
         RuntimeOptions runtimeOptions = createRuntimeOptions("--monochrome");
         Runtime runtime = createRuntimeWithMockedGlue(match, hook, false, runtimeOptions);
         Stats.StatsFormatOptions statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
-        List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
-        final Stats stats = runScenario(reporter, runtime, errors, tracker, stepCount(1));
-        Stats.StatsFormatter.printStats(stats, statsFormatOptions, new PrintStream(baos), false);
+        final RunResult runResult = runScenario(reporter, runtime, tracker, stepCount(1));
+        Stats.StatsFormatter.printStats(runResult.stats, statsFormatOptions, new PrintStream(baos), false);
 
         assertThat(baos.toString(), containsString(String.format("" +
                 "1 Scenarios (1 failed)%n" +
@@ -411,9 +403,8 @@ public class RuntimeTest {
         when(beforeHook.matches(anyCollectionOf(Tag.class))).thenReturn(true);
 
         Runtime runtime = createRuntimeWithMockedGlue(mock(StepDefinitionMatch.class), beforeHook, true, createRuntimeOptions());
-        List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
-        feature.run(mock(Formatter.class), mock(Reporter.class), runtime, errors, tracker);
+        feature.run(mock(Formatter.class), mock(Reporter.class), runtime, tracker);
 
         ArgumentCaptor<Scenario> capturedScenario = ArgumentCaptor.forClass(Scenario.class);
         verify(beforeHook).execute(capturedScenario.capture());
@@ -433,9 +424,8 @@ public class RuntimeTest {
 
         Runtime runtime = createRuntimeWithMockedGlue(mock(StepDefinitionMatch.class), beforeHook, true, createRuntimeOptions());
         Stats stats = new Stats();
-        List<Throwable> throwables = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
-        feature.run(mock(Formatter.class), mock(Reporter.class), runtime, throwables, tracker);
+        feature.run(mock(Formatter.class), mock(Reporter.class), runtime, tracker);
 
         ArgumentCaptor<Scenario> capturedScenario = ArgumentCaptor.forClass(Scenario.class);
         verify(beforeHook).execute(capturedScenario.capture());
@@ -585,10 +575,10 @@ public class RuntimeTest {
         return hook;
     }
 
-    public Runtime.RunStepResult runStep(ScenarioImpl scenarioResult, Reporter reporter, Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker, boolean skip) {
+    public Runtime.RunStepResult runStep(ScenarioImpl scenarioResult, Reporter reporter, Runtime runtime, UndefinedStepsTracker tracker, boolean skip) {
         Step step = mock(Step.class);
         I18n i18n = mock(I18n.class);
-        return runtime.runStep(scenarioResult, errors, tracker, "<featurePath>", step, reporter, i18n, skip);
+        return runtime.runStep(scenarioResult, tracker, "<featurePath>", step, reporter, i18n, skip);
     }
 
     private ResourceLoader createResourceLoaderThatFindsNoFeatures() {
@@ -671,24 +661,25 @@ public class RuntimeTest {
         }
     }
 
-    private Stats runScenario(Reporter reporter, Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker, int stepCount) {
-        Stats stats = new Stats();
+    private RunResult runScenario(Reporter reporter, Runtime runtime, UndefinedStepsTracker tracker, int stepCount) {
+        RunResult runResult = new RunResult(new Stats(), Collections.<Throwable>emptyList());
+
         gherkin.formatter.model.Scenario gherkinScenario = mock(gherkin.formatter.model.Scenario.class);
         final ScenarioImpl scenarioResult = runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), gherkinScenario);
-        final Runtime.RunStepResult beforeHooksResult = runtime.runBeforeHooks(scenarioResult, errors, reporter, Collections.<Tag>emptySet());
-        stats = Stats.append(stats, beforeHooksResult.stats);
+        final Runtime.RunStepResult beforeHooksResult = runtime.runBeforeHooks(scenarioResult, reporter, Collections.<Tag>emptySet());
+        runResult = RunResult.append(runResult, beforeHooksResult.runResult);
         boolean skipNext = beforeHooksResult.skipNext;
         for (int i = 0; i < stepCount; ++i) {
-            final Runtime.RunStepResult runStepResult = runStep(scenarioResult, reporter, runtime, errors, tracker, skipNext);
-            stats = Stats.append(stats, runStepResult.stats);
+            final Runtime.RunStepResult runStepResult = runStep(scenarioResult, reporter, runtime, tracker, skipNext);
+            runResult = RunResult.append(runResult, runStepResult.runResult);
             skipNext = runStepResult.skipNext;
         }
-        final Runtime.RunStepResult runAfterHooksResult = runtime.runAfterHooks(scenarioResult, errors, reporter, Collections.<Tag>emptySet());
-        stats = Stats.append(stats, runAfterHooksResult.stats);
+        final Runtime.RunStepResult runAfterHooksResult = runtime.runAfterHooks(scenarioResult, reporter, Collections.<Tag>emptySet());
+        runResult = RunResult.append(runResult, runAfterHooksResult.runResult);
 
         runtime.disposeBackendWorlds();
-        stats.addScenario(scenarioResult.getStatus(), "scenario designation");
-        return stats;
+        runResult.stats.addScenario(scenarioResult.getStatus(), "scenario designation");
+        return runResult;
     }
 
     private int stepCount(int stepCount) {

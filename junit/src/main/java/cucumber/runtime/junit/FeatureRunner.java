@@ -2,12 +2,8 @@ package cucumber.runtime.junit;
 
 import cucumber.runtime.CucumberException;
 import cucumber.runtime.Runtime;
-import cucumber.runtime.Stats;
 import cucumber.runtime.UndefinedStepsTracker;
-import cucumber.runtime.model.CucumberFeature;
-import cucumber.runtime.model.CucumberScenario;
-import cucumber.runtime.model.CucumberScenarioOutline;
-import cucumber.runtime.model.CucumberTagStatement;
+import cucumber.runtime.model.*;
 import gherkin.formatter.model.Feature;
 import org.junit.runner.Description;
 import org.junit.runner.notification.RunNotifier;
@@ -22,24 +18,22 @@ public class FeatureRunner extends ParentRunner<ParentRunner> {
 
     private final CucumberFeature cucumberFeature;
     private final Runtime runtime;
-    private Stats stats = Stats.IDENTITY;
-    private final List<Throwable> errors;
+    private RunResult runResult = RunResult.IDENTITY;
     private final UndefinedStepsTracker tracker;
     private final JUnitReporter jUnitReporter;
     private Description description;
 
-    public FeatureRunner(CucumberFeature cucumberFeature, Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker, JUnitReporter jUnitReporter) throws InitializationError {
+    public FeatureRunner(CucumberFeature cucumberFeature, Runtime runtime, UndefinedStepsTracker tracker, JUnitReporter jUnitReporter) throws InitializationError {
         super(null);
         this.cucumberFeature = cucumberFeature;
         this.runtime = runtime;
-        this.errors = errors;
         this.tracker = tracker;
         this.jUnitReporter = jUnitReporter;
         buildFeatureElementRunners();
     }
 
-    public Stats getStats() {
-        return stats;
+    public RunResult getRunResult() {
+        return runResult;
     }
 
     @Override
@@ -81,9 +75,9 @@ public class FeatureRunner extends ParentRunner<ParentRunner> {
         super.run(notifier);
         for (ParentRunner child : getChildren()) {
             if (child instanceof ExecutionUnitRunner) {
-                stats = Stats.append(stats, ((ExecutionUnitRunner)child).getStats());
+                runResult = RunResult.append(runResult, ((ExecutionUnitRunner)child).getRunResult());
             } else if (child instanceof ScenarioOutlineRunner) {
-                stats = Stats.append(stats, ((ScenarioOutlineRunner)child).getStats());
+                runResult = RunResult.append(runResult, ((ScenarioOutlineRunner)child).getRunResult());
             }
         }
 
@@ -95,9 +89,9 @@ public class FeatureRunner extends ParentRunner<ParentRunner> {
             try {
                 ParentRunner featureElementRunner;
                 if (cucumberTagStatement instanceof CucumberScenario) {
-                    featureElementRunner = new ExecutionUnitRunner(runtime, errors, tracker, (CucumberScenario) cucumberTagStatement, jUnitReporter);
+                    featureElementRunner = new ExecutionUnitRunner(runtime, tracker, (CucumberScenario) cucumberTagStatement, jUnitReporter);
                 } else {
-                    featureElementRunner = new ScenarioOutlineRunner(runtime, errors, tracker, (CucumberScenarioOutline) cucumberTagStatement, jUnitReporter);
+                    featureElementRunner = new ScenarioOutlineRunner(runtime, tracker, (CucumberScenarioOutline) cucumberTagStatement, jUnitReporter);
                 }
                 children.add(featureElementRunner);
             } catch (InitializationError e) {

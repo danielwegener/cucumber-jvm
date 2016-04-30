@@ -21,6 +21,13 @@ public class Utils {
         return list;
     }
 
+    public static <T> List<T> append(List<T> a, List<T> b) {
+        final List<T> appended = new ArrayList<T>(a.size() + b.size());
+        appended.addAll(a);
+        appended.addAll(b);
+        return appended;
+    }
+
     public static boolean isInstantiable(Class<?> clazz) {
         boolean isNonStaticInnerClass = !Modifier.isStatic(clazz.getModifiers()) && clazz.getEnclosingClass() != null;
         return Modifier.isPublic(clazz.getModifiers()) && !Modifier.isAbstract(clazz.getModifiers()) && !isNonStaticInnerClass;

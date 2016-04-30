@@ -5,6 +5,7 @@ import cucumber.api.StepDefinitionReporter;
 import cucumber.api.SummaryPrinter;
 import cucumber.runtime.io.ResourceLoader;
 import cucumber.runtime.model.CucumberFeature;
+import cucumber.runtime.model.RunResult;
 import cucumber.runtime.snippets.FunctionNameGenerator;
 import cucumber.runtime.xstream.LocalizedXStreams;
 import gherkin.I18n;
@@ -106,7 +107,7 @@ public class Runtime implements UnreportedStepExecutor {
     public RuntimeRunResult run(RuntimeOptions runtimeOptions) throws IOException {
         // Make sure all features parse before initialising any reporters/formatters
         List<CucumberFeature> features = runtimeOptions.cucumberFeatures(resourceLoader);
-        Stats stats = new Stats();
+        RunResult runResult = RunResult.IDENTITY;
         List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
         final Stats.StatsFormatOptions statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
@@ -120,14 +121,14 @@ public class Runtime implements UnreportedStepExecutor {
         glue.reportStepDefinitions(stepDefinitionReporter);
 
         for (CucumberFeature cucumberFeature : features) {
-            final Stats runFeatureResult = cucumberFeature.run(formatter, reporter, this, errors, tracker);
-            stats = Stats.append(stats, runFeatureResult);
+            final RunResult runFeatureResult = cucumberFeature.run(formatter, reporter, this, tracker);
+            runResult = RunResult.append(runResult, runFeatureResult);
         }
 
         formatter.done();
         formatter.close();
         SummaryPrinter summaryPrinter = runtimeOptions.summaryPrinter(classLoader);
-        summaryPrinter.print(statsFormatOptions, stats, errors, getSnippets(tracker, runtimeOptions.getSnippetType().getFunctionNameGenerator()), runtimeOptions.isStrict());
+        summaryPrinter.print(statsFormatOptions, runResult.stats, runResult.errors, getSnippets(tracker, runtimeOptions.getSnippetType().getFunctionNameGenerator()), runtimeOptions.isStrict());
         final byte exitStatus = Runtime.exitStatus(errors, tracker, runtimeOptions.isStrict());
         return new RuntimeRunResult(exitStatus, errors);
     }
@@ -185,32 +186,35 @@ public class Runtime implements UnreportedStepExecutor {
         return glue;
     }
 
-    public RunStepResult runBeforeHooks(ScenarioImpl scenarioResult, List<Throwable> errors, Reporter reporter, Set<Tag> tags) {
-        return runHooks(scenarioResult, errors, glue.getBeforeHooks(), reporter, tags, true, isDryRun);
+    public RunStepResult runBeforeHooks(ScenarioImpl scenarioResult, Reporter reporter, Set<Tag> tags) {
+        return runHooks(scenarioResult, glue.getBeforeHooks(), reporter, tags, true, isDryRun);
     }
 
-    public RunStepResult runAfterHooks(ScenarioImpl scenarioResult, List<Throwable> errors, Reporter reporter, Set<Tag> tags) {
-        return runHooks(scenarioResult, errors, glue.getAfterHooks(), reporter, tags, false, isDryRun);
+    public RunStepResult runAfterHooks(ScenarioImpl scenarioResult, Reporter reporter, Set<Tag> tags) {
+        return runHooks(scenarioResult, glue.getAfterHooks(), reporter, tags, false, isDryRun);
     }
 
-    private RunStepResult runHooks(ScenarioImpl scenarioResult, List<Throwable> errors, List<HookDefinition> hooks, Reporter reporter, Set<Tag> tags, boolean isBefore, boolean isDryRun) {
+    private RunStepResult runHooks(ScenarioImpl scenarioResult, List<HookDefinition> hooks, Reporter reporter, Set<Tag> tags, boolean isBefore, boolean isDryRun) {
         boolean skipNextStep = false;
         Stats stats = Stats.IDENTITY;
+        List<Throwable> errors = Collections.emptyList();
         if (!isDryRun) {
             for (HookDefinition hook : hooks) {
-                final RunStepResult runHookResult = runHookIfTagsMatch(scenarioResult, hook, reporter, tags, errors, isBefore);
-                stats = Stats.append(stats, runHookResult.stats);
+                final RunStepResult runHookResult = runHookIfTagsMatch(scenarioResult, hook, reporter, tags, isBefore);
+                stats = Stats.append(stats, runHookResult.runResult.stats);
+                errors = Utils.append(errors, runHookResult.runResult.errors);
                 if (runHookResult.skipNext) {
                     skipNextStep = true;
                 }
             }
         }
-        return new RunStepResult(skipNextStep, stats);
+        return new RunStepResult(skipNextStep, new RunResult(stats, errors));
     }
 
-    private RunStepResult runHookIfTagsMatch(ScenarioImpl scenarioResult, HookDefinition hook, Reporter reporter, Set<Tag> tags, List<Throwable> errors, boolean isBefore) {
+    private RunStepResult runHookIfTagsMatch(ScenarioImpl scenarioResult, HookDefinition hook, Reporter reporter, Set<Tag> tags, boolean isBefore) {
         Stats stats = new Stats();
         boolean skipNextStep = false;
+        final List<Throwable> errors = new ArrayList<Throwable>(1);
         if (hook.matches(tags)) {
             String status = Result.PASSED;
             Throwable error = null;
@@ -236,7 +240,7 @@ public class Runtime implements UnreportedStepExecutor {
                 }
             }
         }
-        return new RunStepResult(skipNextStep, stats);
+        return new RunStepResult(skipNextStep, new RunResult(stats, errors));
     }
 
     //TODO: Maybe this should go into the cucumber step execution model and it should return the result of that execution!
@@ -261,16 +265,16 @@ public class Runtime implements UnreportedStepExecutor {
 
     public static final class RunStepResult {
         public final boolean skipNext;
-        public final Stats stats;
+        public final RunResult runResult;
 
-        public RunStepResult(boolean skipNext, Stats stats) {
+        public RunStepResult(boolean skipNext, RunResult runResult) {
             this.skipNext = skipNext;
-            this.stats = stats;
+            this.runResult = runResult;
         }
     }
 
     /** returns {@code true} if the next step should be skipped */
-    public RunStepResult runStep(ScenarioImpl scenarioResult, List<Throwable> errors, UndefinedStepsTracker tracker, String featurePath, Step step, Reporter reporter, I18n i18n, boolean skip) {
+    public RunStepResult runStep(ScenarioImpl scenarioResult, UndefinedStepsTracker tracker, String featurePath, Step step, Reporter reporter, I18n i18n, boolean skip) {
         final StepDefinitionMatch match;
         final Stats stats = new Stats();
         try {
@@ -281,8 +285,7 @@ public class Runtime implements UnreportedStepExecutor {
             reporter.result(result);
             scenarioResult.add(result);
             stats.addStep(result);
-            errors.add(e);
-            return new RunStepResult(true, stats);
+            return new RunStepResult(true, new RunResult(stats, Collections.<Throwable>singletonList(e)));
         }
 
         if (match == null) {
@@ -290,7 +293,7 @@ public class Runtime implements UnreportedStepExecutor {
             reporter.result(Result.UNDEFINED);
             scenarioResult.add(Result.UNDEFINED);
             stats.addStep(Result.UNDEFINED);
-            return new RunStepResult(true, stats);
+            return new RunStepResult(true, new RunResult(stats, Collections.<Throwable>emptyList()));
         }
 
         reporter.match(match);
@@ -299,14 +302,15 @@ public class Runtime implements UnreportedStepExecutor {
             scenarioResult.add(Result.SKIPPED);
             stats.addStep(Result.SKIPPED);
             reporter.result(Result.SKIPPED);
-            return new RunStepResult(true, stats);
+            return new RunStepResult(true, new RunResult(stats, Collections.<Throwable>emptyList()));
 
         } else {
             String status = Result.PASSED;
             Throwable error = null;
             final StopWatch stopWatch = stopWatchFactory.create();
             stopWatch.start();
-            boolean skipNextStep = skip;
+            boolean skipNextStep = false;
+            final List<Throwable> errors = new ArrayList<Throwable>(1);
 
             try {
                 match.runStep(i18n);
@@ -322,7 +326,7 @@ public class Runtime implements UnreportedStepExecutor {
                 stats.addStep(result);
                 reporter.result(result);
             }
-            return new RunStepResult(skipNextStep, stats);
+            return new RunStepResult(skipNextStep, new RunResult(stats, errors));
         }
     }
 
