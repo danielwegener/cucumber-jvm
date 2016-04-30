@@ -45,7 +45,8 @@ public class HookTest {
 
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         RuntimeOptions runtimeOptions = new RuntimeOptions("");
-        Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader, asList(backend), runtimeOptions);
+        Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader,
+                runtimeOptions.isDryRun(), runtimeOptions.getGlue(), asList(backend));
         runtime.getGlue().addAfterHook(hook);
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();

@@ -83,7 +83,8 @@ public class CucumberExecutor {
         this.runtimeOptions = createRuntimeOptions(context);
 
         ResourceLoader resourceLoader = new AndroidResourceLoader(context);
-        this.runtime = new Runtime(resourceLoader, classLoader, createBackends(), runtimeOptions);
+        this.runtime = new Runtime(resourceLoader, classLoader, runtimeOptions.isDryRun(),
+                runtimeOptions.getGlue(), createBackends());
         this.cucumberFeatures = runtimeOptions.cucumberFeatures(resourceLoader);
     }
 
@@ -93,8 +94,8 @@ public class CucumberExecutor {
     public void execute() {
 
         final UndefinedStepsTracker tracker = new UndefinedStepsTracker();
-        runtimeOptions.addPlugin(new AndroidInstrumentationReporter(runtime, tracker, instrumentation, getNumberOfConcreteScenarios()));
-        runtimeOptions.addPlugin(new AndroidLogcatReporter(runtime, tracker, TAG));
+        runtimeOptions.addPlugin(new AndroidInstrumentationReporter(runtime, runtimeOptions.getSnippetType().getFunctionNameGenerator(), tracker, instrumentation, getNumberOfConcreteScenarios()));
+        runtimeOptions.addPlugin(new AndroidLogcatReporter(runtime, runtimeOptions.getSnippetType().getFunctionNameGenerator(), tracker, TAG));
 
         // TODO: This is duplicated in info.cucumber.Runtime.
 

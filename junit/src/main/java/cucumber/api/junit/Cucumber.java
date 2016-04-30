@@ -1,6 +1,7 @@
 package cucumber.api.junit;
 
 import cucumber.api.CucumberOptions;
+import cucumber.api.SummaryPrinter;
 import cucumber.runtime.*;
 import cucumber.runtime.Runtime;
 import cucumber.runtime.io.MultiLoader;
@@ -35,7 +36,10 @@ import java.util.List;
 public class Cucumber extends ParentRunner<FeatureRunner> {
     private final JUnitReporter jUnitReporter;
     private final List<FeatureRunner> children = new ArrayList<FeatureRunner>();
+    private final RuntimeOptions runtimeOptions;
+    private final ClassLoader classLoader;
     private final Runtime runtime;
+    private final Stats.StatsFormatOptions statsFormatOptions;
     private final Stats stats;
     private final List<Throwable> errors;
     private final UndefinedStepsTracker tracker;
@@ -49,14 +53,15 @@ public class Cucumber extends ParentRunner<FeatureRunner> {
      */
     public Cucumber(Class clazz) throws InitializationError, IOException {
         super(clazz);
-        ClassLoader classLoader = clazz.getClassLoader();
+        classLoader = clazz.getClassLoader();
         Assertions.assertNoCucumberAnnotatedMethods(clazz);
 
         RuntimeOptionsFactory runtimeOptionsFactory = new RuntimeOptionsFactory(clazz);
-        RuntimeOptions runtimeOptions = runtimeOptionsFactory.create();
+        runtimeOptions = runtimeOptionsFactory.create();
 
         ResourceLoader resourceLoader = new MultiLoader(classLoader);
         runtime = createRuntime(resourceLoader, classLoader, runtimeOptions);
+        statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
         stats = new Stats();
         errors = new ArrayList<Throwable>();
         tracker = new UndefinedStepsTracker();
@@ -79,7 +84,7 @@ public class Cucumber extends ParentRunner<FeatureRunner> {
     protected Runtime createRuntime(ResourceLoader resourceLoader, ClassLoader classLoader,
                                     RuntimeOptions runtimeOptions) throws InitializationError, IOException {
         ClassFinder classFinder = new ResourceLoaderClassFinder(resourceLoader, classLoader);
-        return new Runtime(resourceLoader, classFinder, classLoader, runtimeOptions);
+        return new Runtime(resourceLoader, classFinder, classLoader, runtimeOptions.isDryRun(), runtimeOptions.getGlue());
     }
 
     @Override
@@ -102,7 +107,8 @@ public class Cucumber extends ParentRunner<FeatureRunner> {
         super.run(notifier);
         jUnitReporter.done();
         jUnitReporter.close();
-        runtime.printSummary(stats, errors, tracker);
+        final SummaryPrinter summaryPrinter = runtimeOptions.summaryPrinter(classLoader);
+        summaryPrinter.print(statsFormatOptions, stats, errors, runtime.getSnippets(tracker, runtimeOptions.getSnippetType().getFunctionNameGenerator()), runtimeOptions.isStrict());
     }
 
     private void addChildren(List<CucumberFeature> cucumberFeatures) throws InitializationError {

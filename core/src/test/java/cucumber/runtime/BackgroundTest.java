@@ -2,11 +2,13 @@ package cucumber.runtime;
 
 import cucumber.runtime.io.ClasspathResourceLoader;
 import cucumber.runtime.model.CucumberFeature;
+import cucumber.runtime.snippets.FunctionNameGenerator;
 import gherkin.formatter.PrettyFormatter;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static cucumber.runtime.TestHelper.feature;
@@ -18,8 +20,8 @@ public class BackgroundTest {
     @Test
     public void should_run_background() throws IOException {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        RuntimeOptions runtimeOptions = new RuntimeOptions("");
-        Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader, asList(mock(Backend.class)), runtimeOptions);
+        Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader, false,
+                Collections.<String>emptyList(),  asList(mock(Backend.class)));
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();

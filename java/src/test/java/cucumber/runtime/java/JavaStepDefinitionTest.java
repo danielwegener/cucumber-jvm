@@ -4,6 +4,7 @@ import cucumber.api.java.en.Given;
 import cucumber.runtime.*;
 import cucumber.runtime.Runtime;
 import cucumber.runtime.io.ClasspathResourceLoader;
+import cucumber.runtime.snippets.FunctionNameGenerator;
 import gherkin.I18n;
 import gherkin.formatter.Reporter;
 import gherkin.formatter.model.Comment;
@@ -44,8 +45,8 @@ public class JavaStepDefinitionTest {
     private final Defs defs = new Defs();
     private final JavaBackend backend = new JavaBackend(new SingletonFactory(defs));
     private final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-    private final RuntimeOptions runtimeOptions = new RuntimeOptions("");
-    private final Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader, asList(backend), runtimeOptions);
+    private final Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader, false,
+            Collections.<String>emptyList(), asList(backend));
     private final Stats stats = new Stats();
     private final List<Throwable> errors = new ArrayList<Throwable>();
     private final UndefinedStepsTracker tracker = new UndefinedStepsTracker();

@@ -3,6 +3,7 @@ package cucumber.runtime.android;
 import android.util.Log;
 import cucumber.runtime.Runtime;
 import cucumber.runtime.UndefinedStepsTracker;
+import cucumber.runtime.snippets.FunctionNameGenerator;
 import gherkin.formatter.model.Background;
 import gherkin.formatter.model.Examples;
 import gherkin.formatter.model.Feature;
@@ -22,6 +23,8 @@ public class  AndroidLogcatReporter extends NoOpFormattingReporter {
      * The {@link cucumber.runtime.Runtime} to get the errors and snippets from for writing them to the logcat at the end of the execution.
      */
     private final Runtime runtime;
+
+    private final FunctionNameGenerator functionNameGenerator;
 
     private List<Throwable> errors = Collections.emptyList(); // FIXME this must be an arrayList
 
@@ -43,8 +46,9 @@ public class  AndroidLogcatReporter extends NoOpFormattingReporter {
      * @param runtime the {@link cucumber.runtime.Runtime} to get the errors and snippets from
      * @param logTag the tag to use for logging to logcat
      */
-    public AndroidLogcatReporter(final Runtime runtime, final UndefinedStepsTracker tracker, final String logTag) {
+    public AndroidLogcatReporter(final Runtime runtime, final FunctionNameGenerator functionNameGenerator, final UndefinedStepsTracker tracker, final String logTag) {
         this.runtime = runtime;
+        this.functionNameGenerator = functionNameGenerator;
         this.tracker = tracker;
         this.logTag = logTag;
     }
@@ -99,7 +103,7 @@ public class  AndroidLogcatReporter extends NoOpFormattingReporter {
             Log.e(logTag, throwable.toString());
         }
 
-        for (final String snippet : runtime.getSnippets(tracker)) {
+        for (final String snippet : runtime.getSnippets(tracker, functionNameGenerator)) {
             Log.w(logTag, snippet);
         }
     }

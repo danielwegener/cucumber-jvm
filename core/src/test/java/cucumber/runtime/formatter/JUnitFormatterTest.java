@@ -610,8 +610,10 @@ public class JUnitFormatterTest {
         RuntimeOptions runtimeOptions = new RuntimeOptions(args);
         Backend backend = mock(Backend.class);
         when(backend.getSnippet(any(Step.class), any(FunctionNameGenerator.class))).thenReturn("TEST SNIPPET");
-        final cucumber.runtime.Runtime runtime = new Runtime(resourceLoader, classLoader, asList(backend), runtimeOptions);
-        runtime.run();
+        final cucumber.runtime.Runtime runtime = new Runtime(resourceLoader, classLoader,
+                runtimeOptions.isDryRun(),
+                runtimeOptions.getGlue(), asList(backend));
+        runtime.run(runtimeOptions);
         return report;
     }
 

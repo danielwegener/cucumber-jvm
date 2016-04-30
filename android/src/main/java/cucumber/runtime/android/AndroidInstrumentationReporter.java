@@ -4,6 +4,7 @@ import android.app.Instrumentation;
 import android.os.Bundle;
 import cucumber.runtime.Runtime;
 import cucumber.runtime.UndefinedStepsTracker;
+import cucumber.runtime.snippets.FunctionNameGenerator;
 import gherkin.formatter.model.Feature;
 import gherkin.formatter.model.Match;
 import gherkin.formatter.model.Result;
@@ -63,6 +64,8 @@ public class AndroidInstrumentationReporter extends NoOpFormattingReporter {
      */
     private final UndefinedStepsTracker tracker;
 
+    private final FunctionNameGenerator functionNameGenerator;
+
     /**
      * The instrumentation to report to.
      */
@@ -93,11 +96,13 @@ public class AndroidInstrumentationReporter extends NoOpFormattingReporter {
      */
     public AndroidInstrumentationReporter(
             final Runtime runtime,
+            final FunctionNameGenerator functionNameGenerator,
             final UndefinedStepsTracker tracker,
             final Instrumentation instrumentation,
             final int numberOfTests) {
 
         this.runtime = runtime;
+        this.functionNameGenerator = functionNameGenerator;
         this.tracker = tracker;
         this.instrumentation = instrumentation;
         this.numberOfTests = numberOfTests;
@@ -187,7 +192,7 @@ public class AndroidInstrumentationReporter extends NoOpFormattingReporter {
      * @return string representation of the snippet
      */
     private String getLastSnippet() {
-        return runtime.getSnippets(tracker).get(runtime.getSnippets(tracker).size() - 1);
+        return runtime.getSnippets(tracker, functionNameGenerator).get(runtime.getSnippets(tracker, functionNameGenerator).size() - 1);
     }
 
     /**

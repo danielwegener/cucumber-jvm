@@ -79,9 +79,9 @@ public class CalculatorTest {
         final RuntimeOptionsFactory runtimeOptionsFactory = new RuntimeOptionsFactory(getClass());
         final RuntimeOptions runtimeOptions = runtimeOptionsFactory.create();
 
-        final Runtime runtime = new Runtime(resourceLoader, classLoader, Collections.singleton(backend), runtimeOptions);
+        final Runtime runtime = new Runtime(resourceLoader, classLoader, runtimeOptions.isDryRun(), runtimeOptions.getGlue(), Collections.singleton(backend));
 
-        final Runtime.RuntimeRunResult runtimeRunResult = runtime.run();
+        final Runtime.RuntimeRunResult runtimeRunResult = runtime.run(runtimeOptions);
 
         if (!runtimeRunResult.errors.isEmpty()) {
             throw new CucumberException(runtimeRunResult.errors.get(0));

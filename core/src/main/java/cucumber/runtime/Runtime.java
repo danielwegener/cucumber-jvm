@@ -5,6 +5,7 @@ import cucumber.api.StepDefinitionReporter;
 import cucumber.api.SummaryPrinter;
 import cucumber.runtime.io.ResourceLoader;
 import cucumber.runtime.model.CucumberFeature;
+import cucumber.runtime.snippets.FunctionNameGenerator;
 import cucumber.runtime.xstream.LocalizedXStreams;
 import gherkin.I18n;
 import gherkin.formatter.Argument;
@@ -19,7 +20,6 @@ import gherkin.formatter.model.Step;
 import gherkin.formatter.model.Tag;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,45 +45,42 @@ public class Runtime implements UnreportedStepExecutor {
     private static final byte ERRORS = 0x1;
 
 
-    private final Stats.StatsFormatOptions statsFormatOptions;
-
     private final Glue glue;
-    private final RuntimeOptions runtimeOptions;
 
     private final Collection<? extends Backend> backends;
     private final ResourceLoader resourceLoader;
     private final ClassLoader classLoader;
     private final StopWatch.StopWatchFactory stopWatchFactory;
+    private final boolean isDryRun;
 
 
-    public Runtime(ResourceLoader resourceLoader, ClassFinder classFinder, ClassLoader classLoader, RuntimeOptions runtimeOptions) {
-        this(resourceLoader, classLoader, loadBackends(resourceLoader, classFinder), runtimeOptions);
+    public Runtime(ResourceLoader resourceLoader, ClassFinder classFinder, ClassLoader classLoader, boolean isDryRun, List<String> glue) {
+        this(resourceLoader, classLoader, isDryRun, glue, loadBackends(resourceLoader, classFinder));
     }
 
-    public Runtime(ResourceLoader resourceLoader, ClassLoader classLoader, Collection<? extends Backend> backends, RuntimeOptions runtimeOptions) {
-        this(resourceLoader, classLoader, backends, runtimeOptions, StopWatch.SIMPLE_FACTORY, null);
+    public Runtime(ResourceLoader resourceLoader, ClassLoader classLoader, boolean isDryRun, List<String> glue, Collection<? extends Backend> backends) {
+        this(resourceLoader, classLoader, isDryRun, glue, backends, StopWatch.SIMPLE_FACTORY, null);
     }
 
-    public Runtime(ResourceLoader resourceLoader, ClassLoader classLoader, Collection<? extends Backend> backends,
-                   RuntimeOptions runtimeOptions, RuntimeGlue optionalGlue) {
-        this(resourceLoader, classLoader, backends, runtimeOptions, StopWatch.SIMPLE_FACTORY, optionalGlue);
+    public Runtime(ResourceLoader resourceLoader, ClassLoader classLoader, boolean isDryRun, List<String> glue, Collection<? extends Backend> backends, RuntimeGlue optionalGlue) {
+        this(resourceLoader, classLoader, isDryRun, glue, backends, StopWatch.SIMPLE_FACTORY, optionalGlue);
     }
 
-    public Runtime(ResourceLoader resourceLoader, ClassLoader classLoader, Collection<? extends Backend> backends,
-                   RuntimeOptions runtimeOptions, StopWatch.StopWatchFactory stopWatchFactory, RuntimeGlue optionalGlue) {
+    public Runtime(ResourceLoader resourceLoader, ClassLoader classLoader,
+                   boolean isDryRun, List<String> glue,
+                   Collection<? extends Backend> backends, StopWatch.StopWatchFactory stopWatchFactory, RuntimeGlue optionalGlue) {
         if (backends.isEmpty()) {
             throw new CucumberException("No backends were found. Please make sure you have a backend module on your CLASSPATH.");
         }
         this.resourceLoader = resourceLoader;
         this.classLoader = classLoader;
         this.backends = backends;
-        this.runtimeOptions = runtimeOptions;
         this.stopWatchFactory = stopWatchFactory;
         this.glue = optionalGlue != null ? optionalGlue : new RuntimeGlue(new LocalizedXStreams(classLoader));
-        this.statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
+        this.isDryRun = isDryRun;
 
         for (Backend backend : backends) {
-            backend.loadGlue(glue, runtimeOptions.getGlue());
+            backend.loadGlue(this.glue, glue);
             backend.setUnreportedStepExecutor(this);
         }
     }
@@ -106,12 +103,13 @@ public class Runtime implements UnreportedStepExecutor {
     /**
      * This is the main entry point. Used from CLI, but not from JUnit.
      */
-    public RuntimeRunResult run() throws IOException {
+    public RuntimeRunResult run(RuntimeOptions runtimeOptions) throws IOException {
         // Make sure all features parse before initialising any reporters/formatters
         List<CucumberFeature> features = runtimeOptions.cucumberFeatures(resourceLoader);
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        final Stats.StatsFormatOptions statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
 
         // TODO: This is duplicated in cucumber.api.android.CucumberInstrumentationCore - refactor or keep uptodate
 
@@ -127,17 +125,10 @@ public class Runtime implements UnreportedStepExecutor {
 
         formatter.done();
         formatter.close();
-        printSummary(stats, errors, tracker);
-        return new RuntimeRunResult(exitStatus(errors, tracker), errors);
-    }
-
-    public void printSummary(Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker) {
         SummaryPrinter summaryPrinter = runtimeOptions.summaryPrinter(classLoader);
-        summaryPrinter.print(this, stats, errors, tracker);
-    }
-
-    void printStats(Stats stats, PrintStream out) {
-        Stats.StatsFormatter.printStats(stats, statsFormatOptions, out, runtimeOptions.isStrict());
+        summaryPrinter.print(statsFormatOptions, stats, errors, getSnippets(tracker, runtimeOptions.getSnippetType().getFunctionNameGenerator()), runtimeOptions.isStrict());
+        final byte exitStatus = Runtime.exitStatus(errors, tracker, runtimeOptions.isStrict());
+        return new RuntimeRunResult(exitStatus, errors);
     }
 
     public ScenarioImpl buildBackendWorlds(Reporter reporter, Set<Tag> tags, gherkin.formatter.model.Scenario gherkinScenario) {
@@ -155,28 +146,28 @@ public class Runtime implements UnreportedStepExecutor {
     }
 
 
-    public byte exitStatus(List<Throwable> errors, UndefinedStepsTracker undefinedStepsTracker) {
+    public static byte exitStatus(List<Throwable> errors, UndefinedStepsTracker undefinedStepsTracker, boolean isStrict) {
         byte result = 0x0;
-        if (hasErrors(errors) || hasUndefinedOrPendingStepsAndIsStrict(errors, undefinedStepsTracker)) {
+        if (hasErrors(errors) || hasUndefinedOrPendingStepsAndIsStrict(errors, undefinedStepsTracker, isStrict)) {
             result |= ERRORS;
         }
         return result;
     }
 
-    private boolean hasUndefinedOrPendingStepsAndIsStrict(List<Throwable> errors, UndefinedStepsTracker undefinedStepsTracker) {
-        return runtimeOptions.isStrict() && hasUndefinedOrPendingSteps(errors, undefinedStepsTracker);
+    private static boolean hasUndefinedOrPendingStepsAndIsStrict(List<Throwable> errors, UndefinedStepsTracker undefinedStepsTracker, boolean isStrict) {
+        return isStrict && hasUndefinedOrPendingSteps(errors, undefinedStepsTracker);
     }
 
-    private boolean hasUndefinedOrPendingSteps(List<Throwable> throwables, UndefinedStepsTracker undefinedStepsTracker) {
+    private static boolean hasUndefinedOrPendingSteps(List<Throwable> throwables, UndefinedStepsTracker undefinedStepsTracker) {
         return undefinedStepsTracker.hasUndefinedSteps() || hasPendingSteps(throwables);
     }
 
 
-    private boolean hasPendingSteps(List<Throwable> errors) {
+    private static boolean hasPendingSteps(List<Throwable> errors) {
         return !errors.isEmpty() && !hasErrors(errors);
     }
 
-    private boolean hasErrors(List<Throwable> errors) {
+    private static boolean hasErrors(List<Throwable> errors) {
         for (Throwable error : errors) {
             if (!isPending(error)) {
                 return true;
@@ -185,8 +176,8 @@ public class Runtime implements UnreportedStepExecutor {
         return false;
     }
 
-    public List<String> getSnippets(UndefinedStepsTracker undefinedStepsTracker) {
-        return undefinedStepsTracker.getSnippets(backends, runtimeOptions.getSnippetType().getFunctionNameGenerator());
+    public List<String> getSnippets(UndefinedStepsTracker undefinedStepsTracker, FunctionNameGenerator functionNameGenerator) {
+        return undefinedStepsTracker.getSnippets(backends, functionNameGenerator);
     }
 
     public Glue getGlue() {
@@ -194,11 +185,11 @@ public class Runtime implements UnreportedStepExecutor {
     }
 
     public boolean runBeforeHooks(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, Reporter reporter, Set<Tag> tags) {
-        return runHooks(scenarioResult, stats, errors, glue.getBeforeHooks(), reporter, tags, true, runtimeOptions.isDryRun());
+        return runHooks(scenarioResult, stats, errors, glue.getBeforeHooks(), reporter, tags, true, isDryRun);
     }
 
     public boolean runAfterHooks(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, Reporter reporter, Set<Tag> tags) {
-        return runHooks(scenarioResult, stats, errors, glue.getAfterHooks(), reporter, tags, false, runtimeOptions.isDryRun());
+        return runHooks(scenarioResult, stats, errors, glue.getAfterHooks(), reporter, tags, false, isDryRun);
     }
 
     private boolean runHooks(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, List<HookDefinition> hooks, Reporter reporter, Set<Tag> tags, boolean isBefore, boolean isDryRun) {
@@ -289,7 +280,7 @@ public class Runtime implements UnreportedStepExecutor {
 
         reporter.match(match);
 
-        if (skip || runtimeOptions.isDryRun()) {
+        if (skip || isDryRun) {
             scenarioResult.add(Result.SKIPPED);
             stats.addStep(Result.SKIPPED);
             reporter.result(Result.SKIPPED);

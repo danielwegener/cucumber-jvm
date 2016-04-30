@@ -1,5 +1,6 @@
 package cucumber.api.testng;
 
+import cucumber.api.SummaryPrinter;
 import cucumber.runtime.*;
 import cucumber.runtime.Runtime;
 import cucumber.runtime.io.MultiLoader;
@@ -39,7 +40,7 @@ public class TestNGCucumberRunner {
         TestNgReporter reporter = new TestNgReporter(System.out);
         ClassFinder classFinder = new ResourceLoaderClassFinder(resourceLoader, classLoader);
         resultListener = new FeatureResultListener(runtimeOptions.reporter(classLoader), runtimeOptions.isStrict());
-        runtime = new Runtime(resourceLoader, classFinder, classLoader, runtimeOptions);
+        runtime = new Runtime(resourceLoader, classFinder, classLoader, runtimeOptions.isDryRun(), runtimeOptions.getGlue());
     }
 
     /**
@@ -78,10 +79,12 @@ public class TestNGCucumberRunner {
 
     public void finish() {
         Formatter formatter = runtimeOptions.formatter(classLoader);
+        SummaryPrinter summaryPrinter = runtimeOptions.summaryPrinter(classLoader);
+        Stats.StatsFormatOptions statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
 
         formatter.done();
         formatter.close();
-        runtime.printSummary(stats, errors, tracker);
+        summaryPrinter.print(statsFormatOptions, stats, errors, runtime.getSnippets(tracker, runtimeOptions.getSnippetType().getFunctionNameGenerator()), runtimeOptions.isStrict());
     }
 
     /**

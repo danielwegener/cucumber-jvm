@@ -33,7 +33,8 @@ public class HookOrderTest {
     public void buildMockWorld() {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         RuntimeOptions runtimeOptions = new RuntimeOptions("");
-        runtime = new Runtime(mock(ResourceLoader.class), classLoader, asList(mock(Backend.class)), runtimeOptions);
+        runtime = new Runtime(mock(ResourceLoader.class), classLoader, runtimeOptions.isDryRun(),
+                runtimeOptions.getGlue(), asList(mock(Backend.class)));
         scenarioResult = new ScenarioImpl(null, Collections.<Tag>emptySet(), mock(gherkin.formatter.model.Scenario.class));
         glue = runtime.getGlue();
     }

@@ -15,11 +15,11 @@ import java.util.Locale;
 
 public class Stats {
 
-    static final class StatsFormatOptions {
+    public static final class StatsFormatOptions {
         final Formats formats;
         final Locale locale;
 
-        StatsFormatOptions(boolean monochrome) {
+        public StatsFormatOptions(boolean monochrome) {
             this(monochrome, Locale.getDefault());
         }
 

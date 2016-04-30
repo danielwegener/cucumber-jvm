@@ -74,9 +74,12 @@ public class JSONPrettyFormatterTest {
         RuntimeOptions runtimeOptions = new RuntimeOptions(args);
         Backend backend = mock(Backend.class);
         when(backend.getSnippet(any(Step.class), any(FunctionNameGenerator.class))).thenReturn("TEST SNIPPET");
-        final Runtime runtime = new Runtime(resourceLoader, classLoader, asList(backend), runtimeOptions, StopWatch.Stub.factory(1234), null);
+        final Runtime runtime = new Runtime(resourceLoader, classLoader,
+                runtimeOptions.isDryRun(),
+                runtimeOptions.getGlue(),
+                asList(backend), StopWatch.Stub.factory(1234), null);
         runtime.getGlue().addBeforeHook(hook);
-        runtime.run();
+        runtime.run(runtimeOptions);
         return report;
     }
 
