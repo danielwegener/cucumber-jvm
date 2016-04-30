@@ -2,6 +2,7 @@ package cucumber.runtime.junit;
 
 import cucumber.runtime.Runtime;
 import cucumber.runtime.Stats;
+import cucumber.runtime.UndefinedStepsTracker;
 import cucumber.runtime.model.CucumberExamples;
 import cucumber.runtime.model.CucumberScenarioOutline;
 import org.junit.runner.Description;
@@ -18,16 +19,16 @@ public class ScenarioOutlineRunner extends Suite {
     private final JUnitReporter jUnitReporter;
     private Description description;
 
-    public ScenarioOutlineRunner(Runtime runtime, Stats stats, List<Throwable> errors, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
-        super(null, buildRunners(runtime, stats, errors, cucumberScenarioOutline, jUnitReporter));
+    public ScenarioOutlineRunner(Runtime runtime, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
+        super(null, buildRunners(runtime, stats, errors, tracker, cucumberScenarioOutline, jUnitReporter));
         this.cucumberScenarioOutline = cucumberScenarioOutline;
         this.jUnitReporter = jUnitReporter;
     }
 
-    private static List<Runner> buildRunners(Runtime runtime, Stats stats, List<Throwable> errors, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
+    private static List<Runner> buildRunners(Runtime runtime, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
         List<Runner> runners = new ArrayList<Runner>();
         for (CucumberExamples cucumberExamples : cucumberScenarioOutline.getCucumberExamplesList()) {
-            runners.add(new ExamplesRunner(runtime, stats, errors, cucumberExamples, jUnitReporter));
+            runners.add(new ExamplesRunner(runtime, stats, errors, tracker, cucumberExamples, jUnitReporter));
         }
         return runners;
     }

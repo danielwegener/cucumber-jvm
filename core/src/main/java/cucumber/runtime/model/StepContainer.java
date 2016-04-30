@@ -3,6 +3,7 @@ package cucumber.runtime.model;
 import cucumber.runtime.Runtime;
 import cucumber.runtime.ScenarioImpl;
 import cucumber.runtime.Stats;
+import cucumber.runtime.UndefinedStepsTracker;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.Reporter;
 import gherkin.formatter.model.BasicStatement;
@@ -36,17 +37,17 @@ public class StepContainer {
         }
     }
 
-    boolean runSteps(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, Reporter reporter, Runtime runtime, boolean skip) {
+    boolean runSteps(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker,  Reporter reporter, Runtime runtime, boolean skip) {
         boolean skipNext = skip;
         for (Step step : getSteps()) {
-            if (runStep(scenarioResult, stats, errors, step, reporter, runtime, skipNext)) {
+            if (runStep(scenarioResult, stats, errors, tracker, step, reporter, runtime, skipNext)) {
                 skipNext = true;
             }
         }
         return skipNext;
     }
 
-    boolean runStep(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, Step step, Reporter reporter, Runtime runtime, boolean skip) {
-        return runtime.runStep(scenarioResult, stats, errors, cucumberFeature.getPath(), step, reporter, cucumberFeature.getI18n(), skip);
+    boolean runStep(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker, Step step, Reporter reporter, Runtime runtime, boolean skip) {
+        return runtime.runStep(scenarioResult, stats, errors, tracker, cucumberFeature.getPath(), step, reporter, cucumberFeature.getI18n(), skip);
     }
 }

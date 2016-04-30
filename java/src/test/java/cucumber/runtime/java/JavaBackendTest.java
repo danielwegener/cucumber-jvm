@@ -2,11 +2,7 @@ package cucumber.runtime.java;
 
 import cucumber.api.StepDefinitionReporter;
 import cucumber.api.java.ObjectFactory;
-import cucumber.runtime.CucumberException;
-import cucumber.runtime.Glue;
-import cucumber.runtime.HookDefinition;
-import cucumber.runtime.StepDefinition;
-import cucumber.runtime.StepDefinitionMatch;
+import cucumber.runtime.*;
 import cucumber.runtime.java.stepdefs.Stepdefs;
 import gherkin.I18n;
 import gherkin.formatter.model.Step;
@@ -76,7 +72,7 @@ public class JavaBackendTest {
         }
 
         @Override
-        public StepDefinitionMatch stepDefinitionMatch(String featurePath, Step step, I18n i18n) {
+        public StepDefinitionMatch stepDefinitionMatch(String featurePath, Step step, I18n i18n, UndefinedStepsTracker tracker) {
             throw new UnsupportedOperationException();
         }
 

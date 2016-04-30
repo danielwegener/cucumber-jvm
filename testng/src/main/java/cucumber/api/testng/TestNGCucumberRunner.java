@@ -18,6 +18,7 @@ public class TestNGCucumberRunner {
     private Runtime runtime;
     private Stats stats = new Stats();
     private List<Throwable> errors = new ArrayList<Throwable>();
+    private UndefinedStepsTracker tracker = new UndefinedStepsTracker();
     private RuntimeOptions runtimeOptions;
     private ResourceLoader resourceLoader;
     private FeatureResultListener resultListener;
@@ -51,7 +52,8 @@ public class TestNGCucumberRunner {
                     resultListener,
                     runtime,
                     stats,
-                    errors);
+                    errors,
+                    tracker);
         }
         finish();
         if (!resultListener.isPassed()) {
@@ -66,7 +68,8 @@ public class TestNGCucumberRunner {
                 resultListener,
                 runtime,
                 stats,
-                errors);
+                errors,
+                tracker);
 
         if (!resultListener.isPassed()) {
             throw new CucumberException(resultListener.getFirstError());
@@ -78,7 +81,7 @@ public class TestNGCucumberRunner {
 
         formatter.done();
         formatter.close();
-        runtime.printSummary(stats, errors);
+        runtime.printSummary(stats, errors, tracker);
     }
 
     /**

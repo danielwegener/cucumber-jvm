@@ -49,8 +49,9 @@ public class HookTest {
         runtime.getGlue().addAfterHook(hook);
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
 
-        scenario.run(mock(Formatter.class), mock(Reporter.class), runtime, stats, errors);
+        scenario.run(mock(Formatter.class), mock(Reporter.class), runtime, stats, errors, tracker);
 
         InOrder inOrder = inOrder(hook, backend);
         inOrder.verify(hook).execute(Matchers.<Scenario>any());

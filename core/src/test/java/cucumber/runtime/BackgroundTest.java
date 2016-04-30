@@ -22,6 +22,7 @@ public class BackgroundTest {
         Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader, asList(mock(Backend.class)), runtimeOptions);
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
         CucumberFeature feature = feature("test.feature", "" +
                 "Feature:\n" +
                 "  Background:\n" +
@@ -31,7 +32,7 @@ public class BackgroundTest {
 
         StringBuilder out = new StringBuilder();
         PrettyFormatter pretty = new PrettyFormatter(out, true, true);
-        feature.run(pretty, pretty, runtime, stats, errors);
+        feature.run(pretty, pretty, runtime, stats, errors, tracker);
         String expectedOutput = "" +
                 "Feature: \n" +
                 "\n" +

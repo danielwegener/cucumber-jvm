@@ -3,6 +3,7 @@ package cucumber.runtime.android;
 import android.app.Instrumentation;
 import android.os.Bundle;
 import cucumber.runtime.Runtime;
+import cucumber.runtime.UndefinedStepsTracker;
 import gherkin.formatter.model.Feature;
 import gherkin.formatter.model.Match;
 import gherkin.formatter.model.Result;
@@ -58,6 +59,11 @@ public class AndroidInstrumentationReporter extends NoOpFormattingReporter {
     private final Runtime runtime;
 
     /**
+     * The current cucumber runtime.
+     */
+    private final UndefinedStepsTracker tracker;
+
+    /**
      * The instrumentation to report to.
      */
     private final Instrumentation instrumentation;
@@ -87,10 +93,12 @@ public class AndroidInstrumentationReporter extends NoOpFormattingReporter {
      */
     public AndroidInstrumentationReporter(
             final Runtime runtime,
+            final UndefinedStepsTracker tracker,
             final Instrumentation instrumentation,
             final int numberOfTests) {
 
         this.runtime = runtime;
+        this.tracker = tracker;
         this.instrumentation = instrumentation;
         this.numberOfTests = numberOfTests;
     }
@@ -179,7 +187,7 @@ public class AndroidInstrumentationReporter extends NoOpFormattingReporter {
      * @return string representation of the snippet
      */
     private String getLastSnippet() {
-        return runtime.getSnippets().get(runtime.getSnippets().size() - 1);
+        return runtime.getSnippets(tracker).get(runtime.getSnippets(tracker).size() - 1);
     }
 
     /**

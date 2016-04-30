@@ -38,6 +38,7 @@ public class Cucumber extends ParentRunner<FeatureRunner> {
     private final Runtime runtime;
     private final Stats stats;
     private final List<Throwable> errors;
+    private final UndefinedStepsTracker tracker;
 
     /**
      * Constructor called by JUnit.
@@ -58,6 +59,7 @@ public class Cucumber extends ParentRunner<FeatureRunner> {
         runtime = createRuntime(resourceLoader, classLoader, runtimeOptions);
         stats = new Stats();
         errors = new ArrayList<Throwable>();
+        tracker = new UndefinedStepsTracker();
 
         final List<CucumberFeature> cucumberFeatures = runtimeOptions.cucumberFeatures(resourceLoader);
         jUnitReporter = new JUnitReporter(runtimeOptions.reporter(classLoader), runtimeOptions.formatter(classLoader), runtimeOptions.isStrict());
@@ -100,12 +102,12 @@ public class Cucumber extends ParentRunner<FeatureRunner> {
         super.run(notifier);
         jUnitReporter.done();
         jUnitReporter.close();
-        runtime.printSummary(stats, errors);
+        runtime.printSummary(stats, errors, tracker);
     }
 
     private void addChildren(List<CucumberFeature> cucumberFeatures) throws InitializationError {
         for (CucumberFeature cucumberFeature : cucumberFeatures) {
-            children.add(new FeatureRunner(cucumberFeature, runtime, stats, errors, jUnitReporter));
+            children.add(new FeatureRunner(cucumberFeature, runtime, stats, errors, tracker, jUnitReporter));
         }
     }
 }

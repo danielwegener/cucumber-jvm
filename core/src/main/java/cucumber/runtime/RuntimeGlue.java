@@ -18,11 +18,9 @@ public class RuntimeGlue implements Glue {
     final List<HookDefinition> beforeHooks = new ArrayList<HookDefinition>();
     final List<HookDefinition> afterHooks = new ArrayList<HookDefinition>();
 
-    private final UndefinedStepsTracker tracker;
     private final LocalizedXStreams localizedXStreams;
 
-    public RuntimeGlue(UndefinedStepsTracker tracker, LocalizedXStreams localizedXStreams) {
-        this.tracker = tracker;
+    public RuntimeGlue(LocalizedXStreams localizedXStreams) {
         this.localizedXStreams = localizedXStreams;
     }
 
@@ -58,7 +56,7 @@ public class RuntimeGlue implements Glue {
     }
 
     @Override
-    public StepDefinitionMatch stepDefinitionMatch(String featurePath, Step step, I18n i18n) {
+    public StepDefinitionMatch stepDefinitionMatch(String featurePath, Step step, I18n i18n, UndefinedStepsTracker tracker) {
         List<StepDefinitionMatch> matches = stepDefinitionMatches(featurePath, step);
         try {
             if (matches.size() == 0) {

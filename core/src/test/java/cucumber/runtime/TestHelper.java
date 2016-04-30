@@ -100,9 +100,10 @@ public class TestHelper {
         final Runtime runtime = new Runtime(resourceLoader, classLoader, asList(mock(Backend.class)), runtimeOptions, StopWatch.Stub.factory(stepHookDuration), glue);
         final Stats stats = new Stats();
         final List<Throwable> errors = new ArrayList<Throwable>();
+        final UndefinedStepsTracker undefinedStepsTracker = new UndefinedStepsTracker();
 
         for (CucumberFeature feature : features) {
-            feature.run(formatter, reporter, runtime, stats, errors);
+            feature.run(formatter, reporter, runtime, stats, errors, undefinedStepsTracker);
         }
         formatter.done();
         formatter.close();
@@ -121,7 +122,7 @@ public class TestHelper {
             Result stepResult = getResultWithDefaultPassed(stepsToResult, stepName);
             if (!"undefined".equals(stepResult.getStatus())) {
                 StepDefinitionMatch matchStep = mock(StepDefinitionMatch.class);
-                when(glue.stepDefinitionMatch(anyString(), TestHelper.stepWithName(stepName), (I18n) any())).thenReturn(matchStep);
+                when(glue.stepDefinitionMatch(anyString(), TestHelper.stepWithName(stepName), (I18n) any(), any(UndefinedStepsTracker.class))).thenReturn(matchStep);
                 mockStepResult(stepResult, matchStep);
                 mockStepLocation(getLocationWithDefaultEmptyString(stepsToLocation, stepName), matchStep);
             }

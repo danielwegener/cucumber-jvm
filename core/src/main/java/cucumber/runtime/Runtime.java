@@ -46,7 +46,6 @@ public class Runtime implements UnreportedStepExecutor {
 
 
     private final Stats.StatsFormatOptions statsFormatOptions;
-    final UndefinedStepsTracker undefinedStepsTracker = new UndefinedStepsTracker();
 
     private final Glue glue;
     private final RuntimeOptions runtimeOptions;
@@ -80,7 +79,7 @@ public class Runtime implements UnreportedStepExecutor {
         this.backends = backends;
         this.runtimeOptions = runtimeOptions;
         this.stopWatchFactory = stopWatchFactory;
-        this.glue = optionalGlue != null ? optionalGlue : new RuntimeGlue(undefinedStepsTracker, new LocalizedXStreams(classLoader));
+        this.glue = optionalGlue != null ? optionalGlue : new RuntimeGlue(new LocalizedXStreams(classLoader));
         this.statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
 
         for (Backend backend : backends) {
@@ -112,6 +111,7 @@ public class Runtime implements UnreportedStepExecutor {
         List<CucumberFeature> features = runtimeOptions.cucumberFeatures(resourceLoader);
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
 
         // TODO: This is duplicated in cucumber.api.android.CucumberInstrumentationCore - refactor or keep uptodate
 
@@ -122,18 +122,18 @@ public class Runtime implements UnreportedStepExecutor {
         glue.reportStepDefinitions(stepDefinitionReporter);
 
         for (CucumberFeature cucumberFeature : features) {
-            cucumberFeature.run(formatter, reporter, this, stats, errors);
+            cucumberFeature.run(formatter, reporter, this, stats, errors, tracker);
         }
 
         formatter.done();
         formatter.close();
-        printSummary(stats, errors);
-        return new RuntimeRunResult(exitStatus(errors), errors);
+        printSummary(stats, errors, tracker);
+        return new RuntimeRunResult(exitStatus(errors, tracker), errors);
     }
 
-    public void printSummary(Stats stats, List<Throwable> errors) {
+    public void printSummary(Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker) {
         SummaryPrinter summaryPrinter = runtimeOptions.summaryPrinter(classLoader);
-        summaryPrinter.print(this, stats, errors);
+        summaryPrinter.print(this, stats, errors, tracker);
     }
 
     void printStats(Stats stats, PrintStream out) {
@@ -144,7 +144,6 @@ public class Runtime implements UnreportedStepExecutor {
         for (Backend backend : backends) {
             backend.buildWorld();
         }
-        undefinedStepsTracker.reset();
         //TODO: this is the initial state of the state machine, it should not go here, but into something else
         return new ScenarioImpl(reporter, tags, gherkinScenario);
     }
@@ -156,25 +155,22 @@ public class Runtime implements UnreportedStepExecutor {
     }
 
 
-    public byte exitStatus(List<Throwable> errors) {
+    public byte exitStatus(List<Throwable> errors, UndefinedStepsTracker undefinedStepsTracker) {
         byte result = 0x0;
-        if (hasErrors(errors) || hasUndefinedOrPendingStepsAndIsStrict(errors)) {
+        if (hasErrors(errors) || hasUndefinedOrPendingStepsAndIsStrict(errors, undefinedStepsTracker)) {
             result |= ERRORS;
         }
         return result;
     }
 
-    private boolean hasUndefinedOrPendingStepsAndIsStrict(List<Throwable> errors) {
-        return runtimeOptions.isStrict() && hasUndefinedOrPendingSteps(errors);
+    private boolean hasUndefinedOrPendingStepsAndIsStrict(List<Throwable> errors, UndefinedStepsTracker undefinedStepsTracker) {
+        return runtimeOptions.isStrict() && hasUndefinedOrPendingSteps(errors, undefinedStepsTracker);
     }
 
-    private boolean hasUndefinedOrPendingSteps(List<Throwable> throwables) {
-        return hasUndefinedSteps() || hasPendingSteps(throwables);
+    private boolean hasUndefinedOrPendingSteps(List<Throwable> throwables, UndefinedStepsTracker undefinedStepsTracker) {
+        return undefinedStepsTracker.hasUndefinedSteps() || hasPendingSteps(throwables);
     }
 
-    private boolean hasUndefinedSteps() {
-        return undefinedStepsTracker.hasUndefinedSteps();
-    }
 
     private boolean hasPendingSteps(List<Throwable> errors) {
         return !errors.isEmpty() && !hasErrors(errors);
@@ -189,7 +185,7 @@ public class Runtime implements UnreportedStepExecutor {
         return false;
     }
 
-    public List<String> getSnippets() {
+    public List<String> getSnippets(UndefinedStepsTracker undefinedStepsTracker) {
         return undefinedStepsTracker.getSnippets(backends, runtimeOptions.getSnippetType().getFunctionNameGenerator());
     }
 
@@ -249,10 +245,10 @@ public class Runtime implements UnreportedStepExecutor {
 
     //TODO: Maybe this should go into the cucumber step execution model and it should return the result of that execution!
     @Override
-    public void runUnreportedStep(String featurePath, I18n i18n, String stepKeyword, String stepName, int line, List<DataTableRow> dataTableRows, DocString docString) throws Throwable {
+    public void runUnreportedStep(String featurePath, I18n i18n, String stepKeyword, String stepName, int line, List<DataTableRow> dataTableRows, DocString docString, UndefinedStepsTracker undefinedStepsTracker) throws Throwable {
         Step step = new Step(Collections.<Comment>emptyList(), stepKeyword, stepName, line, dataTableRows, docString);
 
-        StepDefinitionMatch match = glue.stepDefinitionMatch(featurePath, step, i18n);
+        StepDefinitionMatch match = glue.stepDefinitionMatch(featurePath, step, i18n, undefinedStepsTracker);
         if (match == null) {
             UndefinedStepException error = new UndefinedStepException(step);
 
@@ -268,11 +264,11 @@ public class Runtime implements UnreportedStepExecutor {
     }
 
     /** returns {@code true} if the next step should be skipped */
-    public boolean runStep(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, String featurePath, Step step, Reporter reporter, I18n i18n, boolean skip) {
-        StepDefinitionMatch match;
+    public boolean runStep(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker, String featurePath, Step step, Reporter reporter, I18n i18n, boolean skip) {
+        final StepDefinitionMatch match;
 
         try {
-            match = glue.stepDefinitionMatch(featurePath, step, i18n);
+            match = glue.stepDefinitionMatch(featurePath, step, i18n, tracker);
         } catch (AmbiguousStepDefinitionsException e) {
             reporter.match(e.getMatches().get(0));
             Result result = new Result(Result.FAILED, 0L, e, DUMMY_ARG);

@@ -2,6 +2,7 @@ package cucumber.runtime.android;
 
 import android.util.Log;
 import cucumber.runtime.Runtime;
+import cucumber.runtime.UndefinedStepsTracker;
 import gherkin.formatter.model.Background;
 import gherkin.formatter.model.Examples;
 import gherkin.formatter.model.Feature;
@@ -22,7 +23,9 @@ public class  AndroidLogcatReporter extends NoOpFormattingReporter {
      */
     private final Runtime runtime;
 
-    private List<Throwable> errors = Collections.emptyList();
+    private List<Throwable> errors = Collections.emptyList(); // FIXME this must be an arrayList
+
+    private final UndefinedStepsTracker tracker;
 
     /**
      * The log tag to be used when logging to logcat.
@@ -40,8 +43,9 @@ public class  AndroidLogcatReporter extends NoOpFormattingReporter {
      * @param runtime the {@link cucumber.runtime.Runtime} to get the errors and snippets from
      * @param logTag the tag to use for logging to logcat
      */
-    public AndroidLogcatReporter(final Runtime runtime, final String logTag) {
+    public AndroidLogcatReporter(final Runtime runtime, final UndefinedStepsTracker tracker, final String logTag) {
         this.runtime = runtime;
+        this.tracker = tracker;
         this.logTag = logTag;
     }
 
@@ -95,7 +99,7 @@ public class  AndroidLogcatReporter extends NoOpFormattingReporter {
             Log.e(logTag, throwable.toString());
         }
 
-        for (final String snippet : runtime.getSnippets()) {
+        for (final String snippet : runtime.getSnippets(tracker)) {
             Log.w(logTag, snippet);
         }
     }

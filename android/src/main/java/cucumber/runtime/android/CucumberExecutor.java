@@ -92,8 +92,9 @@ public class CucumberExecutor {
      */
     public void execute() {
 
-        runtimeOptions.addPlugin(new AndroidInstrumentationReporter(runtime, instrumentation, getNumberOfConcreteScenarios()));
-        runtimeOptions.addPlugin(new AndroidLogcatReporter(runtime, TAG));
+        final UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        runtimeOptions.addPlugin(new AndroidInstrumentationReporter(runtime, tracker, instrumentation, getNumberOfConcreteScenarios()));
+        runtimeOptions.addPlugin(new AndroidLogcatReporter(runtime, tracker, TAG));
 
         // TODO: This is duplicated in info.cucumber.Runtime.
 
@@ -106,7 +107,7 @@ public class CucumberExecutor {
         runtime.getGlue().reportStepDefinitions(stepDefinitionReporter);
 
         for (final CucumberFeature cucumberFeature : cucumberFeatures) {
-            cucumberFeature.run(formatter, reporter, runtime, stats, errors);
+            cucumberFeature.run(formatter, reporter, runtime, stats, errors, tracker);
         }
 
         if (formatter instanceof AndroidLogcatReporter) {

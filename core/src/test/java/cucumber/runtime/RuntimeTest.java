@@ -66,7 +66,8 @@ public class RuntimeTest {
         Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader, backends, runtimeOptions);
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
-        feature.run(jsonFormatter, jsonFormatter, runtime, stats, errors);
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        feature.run(jsonFormatter, jsonFormatter, runtime, stats, errors, tracker);
         jsonFormatter.done();
         String expected = "" +
                 "[\n" +
@@ -125,42 +126,44 @@ public class RuntimeTest {
     public void strict_without_pending_steps_or_errors() {
         Runtime runtime = createStrictRuntime();
 
-        assertEquals(0x0, runtime.exitStatus(Collections.<Throwable>emptyList()));
+        assertEquals(0x0, runtime.exitStatus(Collections.<Throwable>emptyList(), new UndefinedStepsTracker()));
     }
 
     @Test
     public void non_strict_without_pending_steps_or_errors() {
         Runtime runtime = createNonStrictRuntime();
 
-        assertEquals(0x0, runtime.exitStatus(Collections.<Throwable>emptyList()));
+        assertEquals(0x0, runtime.exitStatus(Collections.<Throwable>emptyList(), new UndefinedStepsTracker()));
     }
 
     @Test
     public void non_strict_with_undefined_steps() {
         Runtime runtime = createNonStrictRuntime();
-        runtime.undefinedStepsTracker.addUndefinedStep(new Step(null, "Given ", "A", 1, null, null), ENGLISH);
-        assertEquals(0x0, runtime.exitStatus(Collections.<Throwable>emptyList()));
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        tracker.addUndefinedStep(new Step(null, "Given ", "A", 1, null, null), ENGLISH);
+        assertEquals(0x0, runtime.exitStatus(Collections.<Throwable>emptyList(), tracker));
     }
 
     @Test
     public void strict_with_undefined_steps() {
         Runtime runtime = createStrictRuntime();
-        runtime.undefinedStepsTracker.addUndefinedStep(new Step(null, "Given ", "A", 1, null, null), ENGLISH);
-        assertEquals(0x1, runtime.exitStatus(Collections.<Throwable>emptyList()));
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        tracker.addUndefinedStep(new Step(null, "Given ", "A", 1, null, null), ENGLISH);
+        assertEquals(0x1, runtime.exitStatus(Collections.<Throwable>emptyList(), tracker));
     }
 
     @Test
     public void strict_with_pending_steps_and_no_errors() {
         Runtime runtime = createStrictRuntime();
 
-        assertEquals(0x1, runtime.exitStatus(Arrays.<Throwable>asList(new PendingException())));
+        assertEquals(0x1, runtime.exitStatus(Arrays.<Throwable>asList(new PendingException()), new UndefinedStepsTracker()));
     }
 
     @Test
     public void non_strict_with_pending_steps() {
         Runtime runtime = createNonStrictRuntime();
 
-        assertEquals(0x0, runtime.exitStatus(Arrays.<Throwable>asList(new PendingException())));
+        assertEquals(0x0, runtime.exitStatus(Arrays.<Throwable>asList(new PendingException()), new UndefinedStepsTracker()));
     }
 
     @Test
@@ -168,7 +171,7 @@ public class RuntimeTest {
         Runtime runtime = createNonStrictRuntime();
 
         assertEquals(0x0, runtime.exitStatus(Arrays.<Throwable>asList(
-                new AssumptionViolatedException("should be treated like pending"))));
+                new AssumptionViolatedException("should be treated like pending")), new UndefinedStepsTracker()));
     }
 
     @Test
@@ -176,21 +179,21 @@ public class RuntimeTest {
         Runtime runtime = createNonStrictRuntime();
 
         assertEquals(0x0, runtime.exitStatus(Arrays.<Throwable>asList(
-                new org.junit.AssumptionViolatedException("should be treated like pending"))));
+                new org.junit.AssumptionViolatedException("should be treated like pending")), new UndefinedStepsTracker()));
     }
 
     @Test
     public void non_strict_with_errors() {
         Runtime runtime = createNonStrictRuntime();
 
-        assertEquals(0x1, runtime.exitStatus(Arrays.<Throwable>asList(new RuntimeException())));
+        assertEquals(0x1, runtime.exitStatus(Arrays.<Throwable>asList(new RuntimeException()), new UndefinedStepsTracker()));
     }
 
     @Test
     public void strict_with_errors() {
         Runtime runtime = createStrictRuntime();
 
-        assertEquals(0x1, runtime.exitStatus(Arrays.<Throwable>asList(new RuntimeException())));
+        assertEquals(0x1, runtime.exitStatus(Arrays.<Throwable>asList(new RuntimeException()), new UndefinedStepsTracker()));
     }
 
     @Test
@@ -200,7 +203,7 @@ public class RuntimeTest {
 
         runtime.run();
 
-        assertEquals(0x0, runtime.exitStatus(Collections.<Throwable>emptyList()));
+        assertEquals(0x0, runtime.exitStatus(Collections.<Throwable>emptyList(), new UndefinedStepsTracker()));
     }
 
     @Test
@@ -250,7 +253,8 @@ public class RuntimeTest {
         Runtime runtime = createRuntimeWithMockedGlue(match, "--monochrome");
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
-        runScenario(reporter, runtime, stats, errors, stepCount(1));
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        runScenario(reporter, runtime, stats, errors, tracker, stepCount(1));
         runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), startsWith(String.format(
@@ -267,7 +271,8 @@ public class RuntimeTest {
         Runtime runtime = createRuntimeWithMockedGlue(match, "--monochrome");
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
-        runScenario(reporter, runtime, stats, errors, stepCount(1));
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        runScenario(reporter, runtime, stats, errors, tracker, stepCount(1));
         runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), containsString(String.format("" +
@@ -284,7 +289,8 @@ public class RuntimeTest {
         Runtime runtime = createRuntimeWithMockedGlue(match, "--monochrome");
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
-        runScenario(reporter, runtime, stats, errors, stepCount(1));
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        runScenario(reporter, runtime, stats, errors, tracker, stepCount(1));
         runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), containsString(String.format("" +
@@ -300,7 +306,8 @@ public class RuntimeTest {
         Runtime runtime = createRuntimeWithMockedGlueWithAmbiguousMatch("--monochrome");
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
-        runScenario(reporter, runtime, stats, errors, stepCount(1));
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        runScenario(reporter, runtime, stats, errors, tracker, stepCount(1));
         runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), containsString(String.format(""+
@@ -317,7 +324,8 @@ public class RuntimeTest {
         Runtime runtime = createRuntimeWithMockedGlue(match, "--monochrome");
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
-        runScenario(reporter, runtime, stats, errors, stepCount(2));
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        runScenario(reporter, runtime, stats, errors, tracker, stepCount(2));
         runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), containsString(String.format("" +
@@ -333,7 +341,8 @@ public class RuntimeTest {
         Runtime runtime = createRuntimeWithMockedGlue(null, "--monochrome");
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
-        runScenario(reporter, runtime, stats, errors, stepCount(1));
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        runScenario(reporter, runtime, stats, errors, tracker, stepCount(1));
         runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), containsString(String.format("" +
@@ -351,7 +360,8 @@ public class RuntimeTest {
         Runtime runtime = createRuntimeWithMockedGlue(match, hook, true, "--monochrome");
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
-        runScenario(reporter, runtime, stats, errors, stepCount(1));
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        runScenario(reporter, runtime, stats, errors, tracker, stepCount(1));
         runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), containsString(String.format("" +
@@ -369,7 +379,8 @@ public class RuntimeTest {
         Runtime runtime = createRuntimeWithMockedGlue(match, hook, false, "--monochrome");
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
-        runScenario(reporter, runtime, stats, errors, stepCount(1));
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        runScenario(reporter, runtime, stats, errors, tracker, stepCount(1));
         runtime.printStats(stats, new PrintStream(baos));
 
         assertThat(baos.toString(), containsString(String.format("" +
@@ -391,7 +402,8 @@ public class RuntimeTest {
         Runtime runtime = createRuntimeWithMockedGlue(mock(StepDefinitionMatch.class), beforeHook, true);
         Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
-        feature.run(mock(Formatter.class), mock(Reporter.class), runtime, stats, errors);
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        feature.run(mock(Formatter.class), mock(Reporter.class), runtime, stats, errors, tracker);
 
         ArgumentCaptor<Scenario> capturedScenario = ArgumentCaptor.forClass(Scenario.class);
         verify(beforeHook).execute(capturedScenario.capture());
@@ -412,7 +424,8 @@ public class RuntimeTest {
         Runtime runtime = createRuntimeWithMockedGlue(mock(StepDefinitionMatch.class), beforeHook, true);
         Stats stats = new Stats();
         List<Throwable> throwables = new ArrayList<Throwable>();
-        feature.run(mock(Formatter.class), mock(Reporter.class), runtime, stats, throwables);
+        UndefinedStepsTracker tracker = new UndefinedStepsTracker();
+        feature.run(mock(Formatter.class), mock(Reporter.class), runtime, stats, throwables, tracker);
 
         ArgumentCaptor<Scenario> capturedScenario = ArgumentCaptor.forClass(Scenario.class);
         verify(beforeHook).execute(capturedScenario.capture());
@@ -562,10 +575,10 @@ public class RuntimeTest {
         return hook;
     }
 
-    public boolean runStep(ScenarioImpl scenarioResult, Reporter reporter, Runtime runtime, Stats stats, List<Throwable> errors, boolean skip) {
+    public boolean runStep(ScenarioImpl scenarioResult, Reporter reporter, Runtime runtime, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker,  boolean skip) {
         Step step = mock(Step.class);
         I18n i18n = mock(I18n.class);
-        return runtime.runStep(scenarioResult, stats, errors, "<featurePath>", step, reporter, i18n, skip);
+        return runtime.runStep(scenarioResult, stats, errors, tracker, "<featurePath>", step, reporter, i18n, skip);
     }
 
     private ResourceLoader createResourceLoaderThatFindsNoFeatures() {
@@ -630,9 +643,9 @@ public class RuntimeTest {
     private void mockMatch(RuntimeGlue glue, StepDefinitionMatch match, boolean isAmbiguous) {
         if (isAmbiguous) {
             Exception exception = new AmbiguousStepDefinitionsException(Arrays.asList(match, match));
-            doThrow(exception).when(glue).stepDefinitionMatch(anyString(), (Step) any(), (I18n) any());
+            doThrow(exception).when(glue).stepDefinitionMatch(anyString(), (Step) any(), (I18n) any(), any(UndefinedStepsTracker.class));
         } else {
-            when(glue.stepDefinitionMatch(anyString(), (Step) any(), (I18n) any())).thenReturn(match);
+            when(glue.stepDefinitionMatch(anyString(), (Step) any(), (I18n) any(), any(UndefinedStepsTracker.class))).thenReturn(match);
         }
     }
 
@@ -644,12 +657,12 @@ public class RuntimeTest {
         }
     }
 
-    private void runScenario(Reporter reporter, Runtime runtime, Stats stats, List<Throwable> errors, int stepCount) {
+    private void runScenario(Reporter reporter, Runtime runtime, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker, int stepCount) {
         gherkin.formatter.model.Scenario gherkinScenario = mock(gherkin.formatter.model.Scenario.class);
         final ScenarioImpl scenarioResult = runtime.buildBackendWorlds(reporter, Collections.<Tag>emptySet(), gherkinScenario);
         boolean skipNext = runtime.runBeforeHooks(scenarioResult, stats, errors, reporter, Collections.<Tag>emptySet());
         for (int i = 0; i < stepCount; ++i) {
-            skipNext = runStep(scenarioResult, reporter, runtime, stats, errors, skipNext);
+            skipNext = runStep(scenarioResult, reporter, runtime, stats, errors, tracker, skipNext);
         }
         runtime.runAfterHooks(scenarioResult, stats, errors, reporter, Collections.<Tag>emptySet());
         runtime.disposeBackendWorlds();

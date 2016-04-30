@@ -3,11 +3,7 @@ package cucumber.runtime.jruby;
 import cucumber.api.DataTable;
 import cucumber.api.PendingException;
 import cucumber.api.Scenario;
-import cucumber.runtime.Backend;
-import cucumber.runtime.CucumberException;
-import cucumber.runtime.Env;
-import cucumber.runtime.Glue;
-import cucumber.runtime.UnreportedStepExecutor;
+import cucumber.runtime.*;
 import cucumber.runtime.io.Resource;
 import cucumber.runtime.io.ResourceLoader;
 import cucumber.runtime.snippets.FunctionNameGenerator;
@@ -39,6 +35,9 @@ public class JRubyBackend implements Backend {
     private final ResourceLoader resourceLoader;
     private final Set<JRubyWorldDefinition> worldDefinitions = new HashSet<JRubyWorldDefinition>();
     private final RubyModule CucumberRuntimeJRubyWorld;
+
+    // TODO it is unclear if this tracker is needed at all. Can UnreportedSteps be tracked as undefined steps?
+    private final UndefinedStepsTracker tracker = new UndefinedStepsTracker();
 
     private Glue glue;
     private UnreportedStepExecutor unreportedStepExecutor;
@@ -156,7 +155,7 @@ public class JRubyBackend implements Backend {
             dataTableRows = dataTable.getGherkinRows();
         }
 
-        unreportedStepExecutor.runUnreportedStep(featurePath, i18n, stepKeyword, stepName, line, dataTableRows, docString);
+        unreportedStepExecutor.runUnreportedStep(featurePath, i18n, stepKeyword, stepName, line, dataTableRows, docString, tracker);
     }
 
     public void executeHook(RubyObject hookRunner, Scenario scenario) {
