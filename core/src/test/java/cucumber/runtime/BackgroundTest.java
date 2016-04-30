@@ -22,7 +22,6 @@ public class BackgroundTest {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         Runtime runtime = new Runtime(new ClasspathResourceLoader(classLoader), classLoader, false,
                 Collections.<String>emptyList(),  asList(mock(Backend.class)));
-        Stats stats = new Stats();
         List<Throwable> errors = new ArrayList<Throwable>();
         UndefinedStepsTracker tracker = new UndefinedStepsTracker();
         CucumberFeature feature = feature("test.feature", "" +
@@ -34,7 +33,7 @@ public class BackgroundTest {
 
         StringBuilder out = new StringBuilder();
         PrettyFormatter pretty = new PrettyFormatter(out, true, true);
-        feature.run(pretty, pretty, runtime, stats, errors, tracker);
+        feature.run(pretty, pretty, runtime, errors, tracker);
         String expectedOutput = "" +
                 "Feature: \n" +
                 "\n" +

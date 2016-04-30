@@ -141,7 +141,7 @@ public class FeatureRunnerTest {
         final List<Throwable> errros = new ArrayList<Throwable>();
         final UndefinedStepsTracker tracker = new UndefinedStepsTracker();
         FormatterSpy formatterSpy = new FormatterSpy();
-        FeatureRunner runner = new FeatureRunner(cucumberFeature, runtime, stats, errros, tracker, new JUnitReporter(formatterSpy, formatterSpy, false));
+        FeatureRunner runner = new FeatureRunner(cucumberFeature, runtime, errros, tracker, new JUnitReporter(formatterSpy, formatterSpy, false));
         runner.run(mock(RunNotifier.class));
         return formatterSpy.toString();
     }

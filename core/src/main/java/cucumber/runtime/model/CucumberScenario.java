@@ -37,23 +37,31 @@ public class CucumberScenario extends CucumberTagStatement {
      * This method is called when Cucumber is run from the CLI or JUnit
      */
     @Override
-    public void run(Formatter formatter, Reporter reporter, Runtime runtime, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker) {
+    public Stats run(Formatter formatter, Reporter reporter, Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker) {
         Set<Tag> tags = tagsAndInheritedTags();
         final ScenarioImpl scenarioResult = runtime.buildBackendWorlds(reporter, tags, this.scenario);
         tracker.reset();
         formatter.startOfScenarioLifeCycle((Scenario) getGherkinModel());
 
-        boolean skipNext = runtime.runBeforeHooks(scenarioResult, stats, errors, reporter, tags);
+        final Runtime.RunStepResult beforeHookResult = runtime.runBeforeHooks(scenarioResult, errors, reporter, tags);
+        Stats stats = beforeHookResult.stats;
+        boolean skipNext = beforeHookResult.skipNext;
 
+        final Runtime.RunStepResult backgroundResult = runBackground(scenarioResult, formatter, reporter, runtime, errors, tracker, skipNext);
+        skipNext = backgroundResult.skipNext;
+        stats = Stats.append(stats, backgroundResult.stats);
 
-        skipNext = runBackground(scenarioResult, formatter, reporter, runtime, stats, errors, tracker, skipNext);
         format(formatter);
-        runSteps(scenarioResult, stats, errors, tracker, reporter, runtime, skipNext);
+        runSteps(scenarioResult, errors, tracker, reporter, runtime, skipNext);
 
-        runtime.runAfterHooks(scenarioResult, stats, errors, reporter, tags);
+        final Runtime.RunStepResult runAfterHooksResult = runtime.runAfterHooks(scenarioResult, errors, reporter, tags);
+        stats = Stats.append(stats, runAfterHooksResult.stats);
+
         formatter.endOfScenarioLifeCycle((Scenario) getGherkinModel());
         runtime.disposeBackendWorlds();
         stats.addScenario(scenarioResult.getStatus(), createScenarioDesignation());
+
+        return stats;
     }
 
     private String createScenarioDesignation() {
@@ -61,11 +69,11 @@ public class CucumberScenario extends CucumberTagStatement {
                 scenario.getKeyword() + ": " + scenario.getName();
     }
 
-    private boolean runBackground(ScenarioImpl scenarioResult, Formatter formatter, Reporter reporter, Runtime runtime, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker, boolean skipNext) {
+    private Runtime.RunStepResult runBackground(ScenarioImpl scenarioResult, Formatter formatter, Reporter reporter, Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker, boolean skipNext) {
         if (cucumberBackground != null) {
             cucumberBackground.format(formatter);
-            return cucumberBackground.runSteps(scenarioResult, stats, errors, tracker, reporter, runtime, skipNext);
+            return cucumberBackground.runSteps(scenarioResult, errors, tracker, reporter, runtime, skipNext);
         }
-        return skipNext;
+        return new Runtime.RunStepResult(skipNext, Stats.IDENTITY);
     }
 }

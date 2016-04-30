@@ -20,7 +20,7 @@ import java.util.Map;
  */
 public class ExecutionUnitRunner extends ParentRunner<Step> {
     private final Runtime runtime;
-    private final Stats stats;
+    private Stats stats = Stats.IDENTITY;
     private final List<Throwable> errors;
     private final UndefinedStepsTracker tracker;
     private final CucumberScenario cucumberScenario;
@@ -29,10 +29,9 @@ public class ExecutionUnitRunner extends ParentRunner<Step> {
     private final Map<Step, Description> stepDescriptions = new HashMap<Step, Description>();
     private final List<Step> runnerSteps = new ArrayList<Step>();
 
-    public ExecutionUnitRunner(Runtime runtime, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker, CucumberScenario cucumberScenario, JUnitReporter jUnitReporter) throws InitializationError {
+    public ExecutionUnitRunner(Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker, CucumberScenario cucumberScenario, JUnitReporter jUnitReporter) throws InitializationError {
         super(ExecutionUnitRunner.class);
         this.runtime = runtime;
-        this.stats = stats;
         this.errors = errors;
         this.cucumberScenario = cucumberScenario;
         this.jUnitReporter = jUnitReporter;
@@ -41,6 +40,10 @@ public class ExecutionUnitRunner extends ParentRunner<Step> {
 
     public List<Step> getRunnerSteps() {
     	return runnerSteps;
+    }
+
+    public Stats getStats() {
+        return stats;
     }
 
     @Override
@@ -96,7 +99,8 @@ public class ExecutionUnitRunner extends ParentRunner<Step> {
     public void run(final RunNotifier notifier) {
         jUnitReporter.startExecutionUnit(this, notifier);
         // This causes runChild to never be called, which seems OK.
-        cucumberScenario.run(jUnitReporter, jUnitReporter, runtime, stats, errors, tracker);
+        final Stats runResult = cucumberScenario.run(jUnitReporter, jUnitReporter, runtime, errors, tracker);
+        this.stats = Stats.append(this.stats, runResult);
         jUnitReporter.finishExecutionUnit();
     }
 

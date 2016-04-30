@@ -39,15 +39,18 @@ public class CucumberScenarioOutline extends CucumberTagStatement {
     }
 
     @Override
-    public void run(Formatter formatter, Reporter reporter, Runtime runtime, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker) {
+    public Stats run(Formatter formatter, Reporter reporter, Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker) {
+        Stats stats = Stats.IDENTITY;
         formatOutlineScenario(formatter);
         for (CucumberExamples cucumberExamples : cucumberExamplesList) {
             cucumberExamples.format(formatter);
             List<CucumberScenario> exampleScenarios = cucumberExamples.createExampleScenarios();
             for (CucumberScenario exampleScenario : exampleScenarios) {
-                exampleScenario.run(formatter, reporter, runtime, stats, errors, tracker);
+                final Stats exampleScenarioRunResult = exampleScenario.run(formatter, reporter, runtime, errors, tracker);
+                stats = Stats.append(stats, exampleScenarioRunResult);
             }
         }
+        return stats;
     }
 
     public void formatOutlineScenario(Formatter formatter) {

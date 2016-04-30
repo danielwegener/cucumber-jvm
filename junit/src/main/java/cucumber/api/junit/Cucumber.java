@@ -8,6 +8,7 @@ import cucumber.runtime.io.MultiLoader;
 import cucumber.runtime.io.ResourceLoader;
 import cucumber.runtime.io.ResourceLoaderClassFinder;
 import cucumber.runtime.junit.Assertions;
+import cucumber.runtime.junit.ExecutionUnitRunner;
 import cucumber.runtime.junit.FeatureRunner;
 import cucumber.runtime.junit.JUnitReporter;
 import cucumber.runtime.model.CucumberFeature;
@@ -40,7 +41,6 @@ public class Cucumber extends ParentRunner<FeatureRunner> {
     private final ClassLoader classLoader;
     private final Runtime runtime;
     private final Stats.StatsFormatOptions statsFormatOptions;
-    private final Stats stats;
     private final List<Throwable> errors;
     private final UndefinedStepsTracker tracker;
 
@@ -62,7 +62,6 @@ public class Cucumber extends ParentRunner<FeatureRunner> {
         ResourceLoader resourceLoader = new MultiLoader(classLoader);
         runtime = createRuntime(resourceLoader, classLoader, runtimeOptions);
         statsFormatOptions = new Stats.StatsFormatOptions(runtimeOptions.isMonochrome());
-        stats = new Stats();
         errors = new ArrayList<Throwable>();
         tracker = new UndefinedStepsTracker();
 
@@ -107,13 +106,18 @@ public class Cucumber extends ParentRunner<FeatureRunner> {
         super.run(notifier);
         jUnitReporter.done();
         jUnitReporter.close();
+        Stats stats = Stats.IDENTITY;
+        for (FeatureRunner child : children) {
+            stats = Stats.append(stats, child.getStats());
+        }
+
         final SummaryPrinter summaryPrinter = runtimeOptions.summaryPrinter(classLoader);
         summaryPrinter.print(statsFormatOptions, stats, errors, runtime.getSnippets(tracker, runtimeOptions.getSnippetType().getFunctionNameGenerator()), runtimeOptions.isStrict());
     }
 
     private void addChildren(List<CucumberFeature> cucumberFeatures) throws InitializationError {
         for (CucumberFeature cucumberFeature : cucumberFeatures) {
-            children.add(new FeatureRunner(cucumberFeature, runtime, stats, errors, tracker, jUnitReporter));
+            children.add(new FeatureRunner(cucumberFeature, runtime, errors, tracker, jUnitReporter));
         }
     }
 }

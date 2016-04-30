@@ -37,17 +37,20 @@ public class StepContainer {
         }
     }
 
-    boolean runSteps(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker,  Reporter reporter, Runtime runtime, boolean skip) {
+    Runtime.RunStepResult runSteps(ScenarioImpl scenarioResult, List<Throwable> errors, UndefinedStepsTracker tracker,  Reporter reporter, Runtime runtime, boolean skip) {
         boolean skipNext = skip;
+        Stats accumulatedStats = Stats.IDENTITY;
         for (Step step : getSteps()) {
-            if (runStep(scenarioResult, stats, errors, tracker, step, reporter, runtime, skipNext)) {
+            final Runtime.RunStepResult runStepResult = runStep(scenarioResult, errors, tracker, step, reporter, runtime, skipNext);
+            accumulatedStats = Stats.append(accumulatedStats, runStepResult.stats);
+            if (runStepResult.skipNext) {
                 skipNext = true;
             }
         }
-        return skipNext;
+        return new Runtime.RunStepResult(skipNext, accumulatedStats);
     }
 
-    boolean runStep(ScenarioImpl scenarioResult, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker, Step step, Reporter reporter, Runtime runtime, boolean skip) {
-        return runtime.runStep(scenarioResult, stats, errors, tracker, cucumberFeature.getPath(), step, reporter, cucumberFeature.getI18n(), skip);
+    Runtime.RunStepResult runStep(ScenarioImpl scenarioResult, List<Throwable> errors, UndefinedStepsTracker tracker, Step step, Reporter reporter, Runtime runtime, boolean skip) {
+        return runtime.runStep(scenarioResult, errors, tracker, cucumberFeature.getPath(), step, reporter, cucumberFeature.getI18n(), skip);
     }
 }

@@ -158,16 +158,18 @@ public class CucumberFeature {
         return path;
     }
 
-    public void run(Formatter formatter, Reporter reporter, Runtime runtime, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker) {
+    public Stats run(Formatter formatter, Reporter reporter, Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker) {
         formatter.uri(getPath());
         formatter.feature(getGherkinFeature());
+        Stats stats = Stats.IDENTITY;
 
         for (CucumberTagStatement cucumberTagStatement : getFeatureElements()) {
             //Run the scenario, it should handle before and after hooks
-            cucumberTagStatement.run(formatter, reporter, runtime, stats, errors, tracker);
+            final Stats featureStats = cucumberTagStatement.run(formatter, reporter, runtime, errors, tracker);
+            stats = Stats.append(stats, featureStats);
         }
         formatter.eof();
-
+        return stats;
     }
 
     private static class CucumberFeatureUriComparator implements Comparator<CucumberFeature> {

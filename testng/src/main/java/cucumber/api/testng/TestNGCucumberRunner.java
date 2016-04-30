@@ -17,13 +17,13 @@ import java.util.List;
  */
 public class TestNGCucumberRunner {
     private Runtime runtime;
-    private Stats stats = new Stats();
     private List<Throwable> errors = new ArrayList<Throwable>();
     private UndefinedStepsTracker tracker = new UndefinedStepsTracker();
     private RuntimeOptions runtimeOptions;
     private ResourceLoader resourceLoader;
     private FeatureResultListener resultListener;
     private ClassLoader classLoader;
+    private Stats stats = Stats.IDENTITY;
 
     /**
      * Bootstrap the cucumber runtime
@@ -48,13 +48,13 @@ public class TestNGCucumberRunner {
      */
     public void runCukes() {
         for (CucumberFeature cucumberFeature : getFeatures()) {
-            cucumberFeature.run(
+            final Stats runResult = cucumberFeature.run(
                     runtimeOptions.formatter(classLoader),
                     resultListener,
                     runtime,
-                    stats,
                     errors,
                     tracker);
+            this.stats = Stats.append(this.stats, runResult);
         }
         finish();
         if (!resultListener.isPassed()) {
@@ -64,13 +64,13 @@ public class TestNGCucumberRunner {
 
     public void runCucumber(CucumberFeature cucumberFeature) {
         resultListener.startFeature();
-        cucumberFeature.run(
+        final Stats runResult = cucumberFeature.run(
                 runtimeOptions.formatter(classLoader),
                 resultListener,
                 runtime,
-                stats,
                 errors,
                 tracker);
+        this.stats = Stats.append(this.stats, runResult);
 
         if (!resultListener.isPassed()) {
             throw new CucumberException(resultListener.getFirstError());

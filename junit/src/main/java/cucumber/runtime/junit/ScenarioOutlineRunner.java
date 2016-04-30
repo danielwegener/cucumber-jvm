@@ -18,19 +18,24 @@ public class ScenarioOutlineRunner extends Suite {
     private final CucumberScenarioOutline cucumberScenarioOutline;
     private final JUnitReporter jUnitReporter;
     private Description description;
+    private Stats stats = Stats.IDENTITY;
 
-    public ScenarioOutlineRunner(Runtime runtime, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
-        super(null, buildRunners(runtime, stats, errors, tracker, cucumberScenarioOutline, jUnitReporter));
+    public ScenarioOutlineRunner(Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
+        super(null, buildRunners(runtime, errors, tracker, cucumberScenarioOutline, jUnitReporter));
         this.cucumberScenarioOutline = cucumberScenarioOutline;
         this.jUnitReporter = jUnitReporter;
     }
 
-    private static List<Runner> buildRunners(Runtime runtime, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
+    private static List<Runner> buildRunners(Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker, CucumberScenarioOutline cucumberScenarioOutline, JUnitReporter jUnitReporter) throws InitializationError {
         List<Runner> runners = new ArrayList<Runner>();
         for (CucumberExamples cucumberExamples : cucumberScenarioOutline.getCucumberExamplesList()) {
-            runners.add(new ExamplesRunner(runtime, stats, errors, tracker, cucumberExamples, jUnitReporter));
+            runners.add(new ExamplesRunner(runtime, errors, tracker, cucumberExamples, jUnitReporter));
         }
         return runners;
+    }
+
+    public Stats getStats() {
+        return stats;
     }
 
     @Override
@@ -53,5 +58,11 @@ public class ScenarioOutlineRunner extends Suite {
     public void run(final RunNotifier notifier) {
         cucumberScenarioOutline.formatOutlineScenario(jUnitReporter);
         super.run(notifier);
+        for (Runner runner : getChildren()) {
+            if (runner instanceof ExamplesRunner) {
+                stats = stats.append(stats, ((ExamplesRunner)runner).getStats());
+            }
+        }
+
     }
 }

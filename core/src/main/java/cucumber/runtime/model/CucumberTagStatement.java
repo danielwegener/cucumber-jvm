@@ -46,5 +46,5 @@ public abstract class CucumberTagStatement extends StepContainer {
         return gherkinModel;
     }
 
-    public abstract void run(Formatter formatter, Reporter reporter, Runtime runtime, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker);
+    public abstract Stats run(Formatter formatter, Reporter reporter, Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker);
 }

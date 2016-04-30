@@ -173,7 +173,33 @@ public class Stats {
         }
     }
 
-    class SubCounts {
+    /**
+     * This instance must never be modified. Stats are actually values und should be immutable.
+     * They are however kept immutable for performance reasons (?).
+     * This instance is the neutral element for append operations and forms a monoid over Stats.
+     **/
+    public static Stats IDENTITY = new Stats();
+
+    /**
+     * Creates a new Stats object that is the result of appending a to b. This operation is associative.
+     */
+    public static Stats append(Stats a, Stats b) {
+        final Stats appended = new Stats();
+        appended.scenarioSubCounts = SubCounts.append(a.scenarioSubCounts, b.scenarioSubCounts);
+        appended.stepSubCounts = SubCounts.append(a.stepSubCounts, b.stepSubCounts);
+        appended.totalDuration = a.totalDuration + b.totalDuration;
+        appended.failedScenarios.addAll(a.failedScenarios);
+        appended.failedScenarios.addAll(b.failedScenarios);
+        appended.undefinedScenarios.addAll(a.undefinedScenarios);
+        appended.undefinedScenarios.addAll(b.undefinedScenarios);
+        appended.pendingScenarios.addAll(a.pendingScenarios);
+        appended.pendingScenarios.addAll(b.pendingScenarios);
+        appended.passedScenarios.addAll(a.passedScenarios);
+        appended.passedScenarios.addAll(b.passedScenarios);
+        return appended;
+    }
+
+    static class SubCounts {
         public int passed = 0;
         public int failed = 0;
         public int skipped = 0;
@@ -183,5 +209,28 @@ public class Stats {
         public int getTotal() {
             return passed + failed + skipped + pending + undefined;
         }
+
+        /**
+         * This instance must never be modified. SubCounts are actually values und should be immutable.
+         * They are however kept immutable for performance reasons (?).
+         * This instance is the neutral element for append operations and forms a monoid over SubCounts.
+         **/
+        public static final SubCounts IDENTITY = new SubCounts();
+
+        /**
+         * Appends two sub counts. This operation is associative.
+         */
+        public static SubCounts append(SubCounts a, SubCounts b) {
+            final SubCounts subCounts = new SubCounts();
+            subCounts.passed = a.passed + b.passed;
+            subCounts.failed = a.failed + b.failed;
+            subCounts.skipped = a.skipped + b.skipped;
+            subCounts.pending = a.pending + b.pending;
+            subCounts.undefined = a.undefined + b.undefined;
+            return subCounts;
+        }
+
+
+
     }
 }

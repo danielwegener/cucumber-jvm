@@ -100,12 +100,11 @@ public class TestHelper {
         final Runtime runtime = new Runtime(resourceLoader, classLoader,
                 runtimeOptions.isDryRun(),
                 runtimeOptions.getGlue(), asList(mock(Backend.class)), StopWatch.Stub.factory(stepHookDuration), glue);
-        final Stats stats = new Stats();
         final List<Throwable> errors = new ArrayList<Throwable>();
         final UndefinedStepsTracker undefinedStepsTracker = new UndefinedStepsTracker();
 
         for (CucumberFeature feature : features) {
-            feature.run(formatter, reporter, runtime, stats, errors, undefinedStepsTracker);
+            feature.run(formatter, reporter, runtime, errors, undefinedStepsTracker);
         }
         formatter.done();
         formatter.close();

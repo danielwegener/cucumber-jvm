@@ -22,21 +22,24 @@ public class FeatureRunner extends ParentRunner<ParentRunner> {
 
     private final CucumberFeature cucumberFeature;
     private final Runtime runtime;
-    private final Stats stats;
+    private Stats stats = Stats.IDENTITY;
     private final List<Throwable> errors;
     private final UndefinedStepsTracker tracker;
     private final JUnitReporter jUnitReporter;
     private Description description;
 
-    public FeatureRunner(CucumberFeature cucumberFeature, Runtime runtime, Stats stats, List<Throwable> errors, UndefinedStepsTracker tracker, JUnitReporter jUnitReporter) throws InitializationError {
+    public FeatureRunner(CucumberFeature cucumberFeature, Runtime runtime, List<Throwable> errors, UndefinedStepsTracker tracker, JUnitReporter jUnitReporter) throws InitializationError {
         super(null);
         this.cucumberFeature = cucumberFeature;
         this.runtime = runtime;
-        this.stats = stats;
         this.errors = errors;
         this.tracker = tracker;
         this.jUnitReporter = jUnitReporter;
         buildFeatureElementRunners();
+    }
+
+    public Stats getStats() {
+        return stats;
     }
 
     @Override
@@ -76,6 +79,14 @@ public class FeatureRunner extends ParentRunner<ParentRunner> {
         jUnitReporter.uri(cucumberFeature.getPath());
         jUnitReporter.feature(cucumberFeature.getGherkinFeature());
         super.run(notifier);
+        for (ParentRunner child : getChildren()) {
+            if (child instanceof ExecutionUnitRunner) {
+                stats = Stats.append(stats, ((ExecutionUnitRunner)child).getStats());
+            } else if (child instanceof ScenarioOutlineRunner) {
+                stats = Stats.append(stats, ((ScenarioOutlineRunner)child).getStats());
+            }
+        }
+
         jUnitReporter.eof();
     }
 
@@ -84,9 +95,9 @@ public class FeatureRunner extends ParentRunner<ParentRunner> {
             try {
                 ParentRunner featureElementRunner;
                 if (cucumberTagStatement instanceof CucumberScenario) {
-                    featureElementRunner = new ExecutionUnitRunner(runtime, stats, errors, tracker, (CucumberScenario) cucumberTagStatement, jUnitReporter);
+                    featureElementRunner = new ExecutionUnitRunner(runtime, errors, tracker, (CucumberScenario) cucumberTagStatement, jUnitReporter);
                 } else {
-                    featureElementRunner = new ScenarioOutlineRunner(runtime, stats, errors, tracker, (CucumberScenarioOutline) cucumberTagStatement, jUnitReporter);
+                    featureElementRunner = new ScenarioOutlineRunner(runtime, errors, tracker, (CucumberScenarioOutline) cucumberTagStatement, jUnitReporter);
                 }
                 children.add(featureElementRunner);
             } catch (InitializationError e) {
